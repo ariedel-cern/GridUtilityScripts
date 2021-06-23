@@ -44,13 +44,17 @@ while [ $Flag -eq 0 ]; do
 	echo "Gracefully stop with CRTL-C"
 
 	# search for remote files
-	RemoteFiles="$(alien_find "alien://${SearchPath}/*/${FileToCopy}")"
+	RemoteFiles="$(alien_find "alien://${SearchPath}/**/${FileToCopy}")"
+	[ -z RemoteFiles ] && echo "No files found on grid" && exit 1
 
 	# start jobs in parallel for downloads
 	for ((i = 1; i <= $ParallelJobs; i++)); do
 		echo "Start parallel Download $i"
 		# go into subshell
 		(
+		
+		    echo "PID: $BASHPID"
+
 			# loop over all remote files in this chunk
 			while read RemoteFile; do
 				# reset retries
@@ -80,6 +84,7 @@ while [ $Flag -eq 0 ]; do
 					echo "Something went wrong... Retry $Retries"
 				done
 			done < <(split -n l/$i/$ParallelJobs <<<$RemoteFiles)
+			echo "DONE"
 			# split all found remote files into chunks (without spliting lines)
 		) &>"${LogDir}/${i}_ParallelDownload.log" &
 	done
