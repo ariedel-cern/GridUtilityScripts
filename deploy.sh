@@ -17,5 +17,6 @@ ln -sf $GUSpath/CopyFromGrid.sh $DeployPath/CopyFromGrid.sh
 ln -sf $GUSpath/CheckFileIntegrity.sh $DeployPath/CheckFileIntegrity.sh
 ln -sf $GUSpath/Merge.sh $DeployPath/Merge.sh
 ln -sf $GUSpath/Merge.C $DeployPath/Merge.C
+ln -sf $GUSpath/Resubmit.sh $DeployPath/Resubmit.sh
 
 exit 0
