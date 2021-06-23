@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 18.06.2021
+# Last Modified Date: 23.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -35,13 +35,17 @@ echo "Copying $FileToCopy"
 # variables used in the loop
 LocalFile=""
 Retries=0
-RemoteFiles="$(alien_find "alien://${SearchPath}/*/${FileToCopy}")"
+RemoteFiles=""
 
 # start endless loop
 while [ $Flag -eq 0 ]; do
 	echo "Start endless loop iteration"
 	echo "Tail log files in $LogDir"
 	echo "Gracefully stop with CRTL-C"
+
+	# search for remote files
+	RemoteFiles="$(alien_find "alien://${SearchPath}/*/${FileToCopy}")"
+
 	# start jobs in parallel for downloads
 	for ((i = 1; i <= $ParallelJobs; i++)); do
 		echo "Start parallel Download $i"
