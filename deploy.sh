@@ -11,6 +11,8 @@ echo '$HOME/.local/bin is assumed to be in your PATH'
 DeployPath="$HOME/.local/bin"
 GUSpath="$(dirname $(realpath $BASH_SOURCE[0]))"
 
+mkdir -p $DeployPath 2>/dev/null
+
 ln -sf $GUSpath/CopyFromGrid.sh $DeployPath/CopyFromGrid.sh
 ln -sf $GUSpath/CheckFileIntegrity.sh $DeployPath/CheckFileIntegrity.sh
 ln -sf $GUSpath/Merge.sh $DeployPath/Merge.sh
