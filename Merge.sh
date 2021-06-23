@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 18.06.2021
+# Last Modified Date: 23.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -12,7 +12,11 @@ ConfigFile="config"
 SearchPath=""
 FileToMerge=""
 FileToMergeList="FileToMergeList.txt"
-MergeMacro=$(realpath Merge.C)
+if [ -f "Merge.C"];then
+		MergeMacro="$(realpath Merge.C)"
+else
+		MergeMacro="$HOME/.local/bin/Merge.C"
+fi
 MergedFile=""
 
 # get variables from config file
