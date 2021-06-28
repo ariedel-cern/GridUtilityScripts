@@ -24,3 +24,7 @@ Check integrity of local files copied from the Grid.
 ### Merge.sh
 
 Merged local files run by run.
+
+### Resubmit.sh
+
+Automatically resubmit failed jobs with a certain error status to the grid.

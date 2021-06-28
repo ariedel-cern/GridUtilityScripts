@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 18.06.2021
+# Last Modified Date: 28.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in a given directory and subdirectories
@@ -43,8 +43,9 @@ while read File; do
 		if ! Check_Integrity $File &>/dev/null; then
 			echo "Fail... remove $File"
 			rm $File
+		else
+			echo "Pass... keep $File"
 		fi
-		echo "Pass"
 	) &
 
 	((Counter++))

@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 23.06.2021
+# Last Modified Date: 28.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -15,7 +15,7 @@ trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 ConfigFile="config"
 SearchPath=""
 FileToCopy=""
-Pause=5
+Pause=300
 ParallelJobs=10
 MaxRetries=3
 LogDir="Log"
@@ -48,7 +48,7 @@ while [ $Flag -eq 0 ]; do
 	[ -z RemoteFiles ] && echo "No files found on grid" && exit 1
 
 	# start jobs in parallel for downloads
-	for ((i = 1; i <= $ParallelJobs; i++)); do
+	for ((i = 0; i < $ParallelJobs; i++)); do
 		echo "Start parallel Download $i"
 		# go into subshell
 		(
@@ -71,8 +71,11 @@ while [ $Flag -eq 0 ]; do
 				# construct filename for the local file such that we preserve subdirectory structure from the grid
 				LocalFile="$(basename $SearchPath)${RemoteFile##${SearchPath}}"
 				# LocalFile="$(basename $SearchPath)/${File/${SearchPath}\//}"
-				echo "Copy to $LocalFile locally"
 
+				# check if file exists locally
+				[ -f $LocalFile ] && echo "File exists... skip" && continue
+
+				echo "Copy to $LocalFile locally"
 				# attempt to copy file
 				while ! alien_cp $RemoteFile $LocalFile; do
 					if [ $Retries -ge $MaxRetries ]; then
@@ -83,7 +86,7 @@ while [ $Flag -eq 0 ]; do
 					((Retries++))
 					echo "Something went wrong... Retry $Retries"
 				done
-			done < <(split -n l/$i/$ParallelJobs <<<$RemoteFiles)
+		    done < <(split -n l/$((i+1))/$ParallelJobs <<<$RemoteFiles)
 			echo "DONE"
 			# split all found remote files into chunks (without spliting lines)
 		) &>"${LogDir}/${i}_ParallelDownload.log" &
@@ -91,11 +94,12 @@ while [ $Flag -eq 0 ]; do
 	echo "Wait for downloads to finish"
 	wait
 
-	#clean up logs of blacklisted files
+	# clean up logs of blacklisted files
 	echo "Cleanup"
 	find $LogDir -name "$(basename $BlacklistedFiles)_*" -exec cat {} + >>"$BlacklistedFiles"
 	find $LogDir -name "$(basename $BlacklistedFiles)_*" -exec rm {} \;
 
+	[ $Flag -ne 0 ] && break
 	echo "Pause"
 	sleep $Pause
 done

@@ -2,7 +2,7 @@
 # File              : Resubmit.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 23.06.2021
+# Last Modified Date: 25.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # search for jobs in grid that failed and resubmit them
@@ -12,16 +12,17 @@ Flag=0
 trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 
 # global variables
-# list of error states where automatic resubmissing is reasonable
-RetryError="EV ESV ESP" 
+# list of error states where automatic resubmitting is reasonable
+RetryError="EV ESV ESP EIB EE"
 Timeout=30
 Counter=0
 
 # loop variables
-Masterjobs=""
 Masterjob=""
+Masterjobs=""
+MasterjobID=""
 MasterjobState=""
-Job=""
+JobID=""
 JobErrorState=""
 
 while [ $Flag -eq 0 ];do
@@ -33,29 +34,43 @@ while [ $Flag -eq 0 ];do
 		Masterjobs=$(alien_ps -M)
 		echo "Found $(wc -l <<<$Masterjobs) Masterjobs"
 
-		while read Mjob;do
-				Masterjob=$(awk '{print $2}' <<< "$Mjob")
-				MasterjobState=$(awk '{print $4}' <<< "$Mjob")
+		while read Masterjob;do
+				MasterjobID=$(awk '{print $2}' <<< "$Masterjob")
+				MasterjobState=$(awk '{print $4}' <<< "$Masterjob")
 
-				[ $MasterjobState = "D" ]  && echo "Masterjob $Masterjob is DONE" && ((Counter++))
-
-				[ $MasterjobState = "S" ]  && echo "Masterjob $Masterjob is SPLITTING, watch for subjobs"
+				case $MasterjobState in
+						"D")
+								echo "Masterjob $MasterjobID is DONE"
+								((Counter++))
+								;;
+						"S")
+								echo "Masterjob $MasterjobID is SPLITTING, watch for subjobs"
+								;;
+						"I")
+								echo "Masterjob $MasterjobID is INSERTING, watch for subjobs"
+								;;
+						"ES")
+								echo "Masterjob $MasterjobID is in ERRORSPLIT, resubmit"
+								alien.py $MasterjobID resumit
+								;;
+				esac
 		done <<<$Masterjobs
 
 		[ "$Counter" -eq "$(wc -l <<<$Masterjobs)" ] && echo "All Masterjobs are DONE... exit" && exit 0
 
 		echo "Iterate over Jobs in error state"
 		while read Jobs;do
-				Job=$(awk '{print $2}' <<< $Jobs)
+				JobID=$(awk '{print $2}' <<< $Jobs)
 				JobErrorState=$(awk '{print $4}' <<< $Jobs)
 				if [[ $RetryError =~ $JobErrorState ]];then
-						echo "Try resubmitting job $Job"
-						alien.py resubmit $Job
+						echo "Try resubmitting job $JobID"
+						alien.py resubmit $JobID
 				else
-						echo "FATAL... There is a problem with job $Job"
+						echo "FATAL... There is a problem with job $JobID"
 				fi
 		done < <(alien_ps -E)
 		echo "Done with resubmitting"
+		[ $Flag -ne 0 ] && break
 		echo "Wait ${Timeout}s before starting with next the round"
 
 		sleep $Timeout
