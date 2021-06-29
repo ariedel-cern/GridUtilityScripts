@@ -1,5 +1,8 @@
 SearchPath=/alice/cern.ch/user/a/abilandz/20180301_LHC10e_TRAIN1/output
 FileToCopy=outputCentrality.root
-Pause=30
-ParallelJobs=5
-MaxRetries=3
+Pause=10
+ParallelJobs=10
+MaxCopyAttempts=5
+TmpDir=tmp
+GlobalLog=CopyFromGrid.log
+ProcessLog=Process.log
