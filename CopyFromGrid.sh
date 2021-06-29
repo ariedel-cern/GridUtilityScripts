@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 29.06.2021
+# Last Modified Date: 30.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -20,6 +20,8 @@ if [ ! -f $ConfigFile ];then
 fi
 
 # declare variables
+GlobalLog=""
+ProcessLog=""
 SearchPath=""
 FileToCopy=""
 Pause=""
@@ -27,18 +29,12 @@ ParallelJobs=""
 MaxCopyAttempts=""
 CopyAttempts=""
 RemoteFiles=""
+RemoteFile=""
 LocalFile=""
 State=""
 NumberOfRemoteFiles=""
 NumberOfCopiedFiles=""
 NumberOfBlacklistedFiles=""
-
-# logging
-TmpDir="tmp"
-mkdir -p $TmpDir
-LogFile="CopyFromGrid.log"
-[ ! -f $LogFile ] && touch $LogFile
-ProcessLogFile="Process.log"
 
 # cleanup and aggregate results into global logfile after each iteration
 Cleanup(){
@@ -48,8 +44,38 @@ Cleanup(){
 	# remove logfiles from the different subshells
 	find $2 -name "*${3}" -exec rm -rf {} \;
 	# protect against writing an entry multiple times
-	sort -u $LogFile -o $LogFile
+	sort -u $1 -o $1
 }
+
+# get some variables from config file
+GlobalLog="$(awk -F'=' '/GlobalLog/{print $2}' $ConfigFile)"
+[ -z $GlobalLog ] && echo "No log file specified" && exit 1
+SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
+[ -z $SearchPath ] && echo "No directory to search through" && exit 1
+TmpDir="$(awk -F'=' '/TmpDir/{print $2}' $ConfigFile)"
+[ -z $TmpDir ] && echo "No temporary directory specified" && exit 1
+# create TmpDir if it does not exist already
+mkdir -p $TmpDir
+
+# check if there is a logfile from a previous analysis
+if [ -f $GlobalLog ];then
+	echo "Found log file from previous run, validate it..."
+	# if so, validate it
+	while read RemoteFile;do
+		LocalFile="$(basename $SearchPath)${RemoteFile##${SearchPath}}"
+		# check ift the file exists
+		if [ -f $LocalFile ];then
+				# if so, bail out
+				continue
+		else
+				# if not, remove the entry
+				sed -i -e "/${RemoteFile//\//\\/}/d" $GlobalLog
+		fi
+done < <(awk '/COPIED/{print $1}' $GlobalLog)
+else
+	# if not, create an empty one
+	touch $GlobalLog
+fi
 
 # start endless loop
 while [ $Flag -eq 0 ]; do
@@ -69,31 +95,34 @@ while [ $Flag -eq 0 ]; do
 	ParallelJobs="$(awk -F'=' '/ParallelJobs/{print $2}' $ConfigFile)"
 	[ -z $ParallelJobs ] && echo "No number of parallel jobs" && exit 1
 	MaxCopyAttempts="$(awk -F'=' '/MaxCopyAttempts/{print $2}' $ConfigFile)"
-	[ -z $MaxCopyAttempts ] && echo "No numer of maximal retries" && exit 1
+	[ -z $MaxCopyAttempts ] && echo "No nubmer of maximal retries" && exit 1
+	ProcessLog="$(awk -F'=' '/ProcessLog/{print $2}' $ConfigFile)"
+	[ -z $ProcessLog ] && echo "No nubmer of maximal retries" && exit 1
 
 	# search for remote files on grid
 	RemoteFiles="$(alien_find "alien://${SearchPath}/**/${FileToCopy}")"
 	[ -z RemoteFiles ] && echo "No files found on grid" && exit 1
 
 	NumberOfRemoteFiles="$(wc -l <<<$RemoteFiles)"
-	NumberOfCopiedFiles="$(grep "COPIED" "$LogFile" | wc -l)"
-	NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$LogFile" | wc -l)"
+	NumberOfCopiedFiles="$(grep "COPIED" "$GlobalLog" | wc -l)"
+	NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$GlobalLog" | wc -l)"
 
 
-	echo "${NumberOfCopiedFiles}/${NumberOfRemoteFiles} are copied to local machine"
-	echo "${NumberOfBlacklistedFiles} are blacklisted"
+	echo "$NumberOfCopiedFiles/$NumberOfRemoteFiles files are already copied to local machine"
+	echo "$NumberOfBlacklistedFiles/$NumberOfRemoteFiles files are blacklisted"
+	echo "$(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles))/$NumberOfRemoteFiles files are accounted for"
 
 	# start jobs in parallel for downloads
 	for ((i = 0; i < $ParallelJobs; i++)); do
-		echo "Start parallel Download $i"
+		echo "Start Process $i of $ParallelJobs"
 		# go into subshell
 		(
 			# loop over all remote files in this chunk
 			while read RemoteFile; do
 
 				# get entries from log file
-				State=$(grep $RemoteFile $LogFile | head -1 | awk '{print $2}')
-				CopyAttempts=$(grep "$RemoteFile" $LogFile | head -1 | awk '{print $3}')
+				State=$(grep $RemoteFile $GlobalLog | head -1 | awk '{print $2}')
+				CopyAttempts=$(grep "$RemoteFile" $GlobalLog | head -1 | awk '{print $3}')
 
 				# set default values if they were not found
 				State=${State:=NOT_COPIED}
@@ -111,7 +140,7 @@ while [ $Flag -eq 0 ]; do
 					((CopyAttempts++))
 					# attempt to copy
 					if alien_cp "alien://${RemoteFile}" "$LocalFile" &>/dev/null;then
-						# if successfule, bail out
+						# if successful, bail out
 						State="COPIED"
 						break
 					fi
@@ -130,7 +159,7 @@ while [ $Flag -eq 0 ]; do
 			# split all found remote files into chunks (without spliting lines)
 		    done < <(split -n l/$((i+1))/$ParallelJobs <<<$RemoteFiles)
 		# redirect to process log file
-		) >"${TmpDir}/${i}_${ProcessLogFile}" &
+		) >"${TmpDir}/${i}_${ProcessLog}" &
 	done
 
 	echo "Wait for downloads to finish"
@@ -138,17 +167,18 @@ while [ $Flag -eq 0 ]; do
 
 	# only cleanup and pause when not interrupted
 	if [ $Flag -eq 0 ];then
-		Cleanup $LogFile $TmpDir $ProcessLogFile
+		Cleanup $GlobalLog $TmpDir $ProcessLog
 		echo "Pause"
 		sleep $Pause
 	fi
 done
 
+echo "Broken out of endless loop"
 echo "Wait for last jobs to finish"
 wait
-Cleanup $LogFile $TmpDir $ProcessLogFile
+Cleanup $GlobalLog $TmpDir $ProcessLog
 
 #if the temporary directory where we aggregated the log files is empty, remove it
-rmdir $TmpDir
+# rmdir $TmpDir
 
 exit 0
