@@ -2,36 +2,43 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 23.06.2021
+# Last Modified Date: 30.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
 
-# global vairables
-ConfigFile="config"
-SearchPath=""
-FileToMerge=""
-FileToMergeList="FileToMergeList.txt"
-if [ -f "Merge.C"];then
-		MergeMacro="$(realpath Merge.C)"
-else
-		MergeMacro="$HOME/.local/bin/Merge.C"
+# parse arguments
+# expect $1 to be path to configuration file CopyFromGrid.config
+ConfigFile=${1:-CopyFromGrid.config}
+if [ ! -f $ConfigFile ]; then
+	echo "No local config file, fallback to global default"
+	ConfigFile=$HOME/config/CopyFromGrid.config
 fi
-MergedFile=""
 
 # get variables from config file
 [ ! -f $ConfigFile ] && echo "No config file" && exit 1
 SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
+[ -z $SearchPath ] && echo "No directory in config file" && exit 1
 SearchPath=$(basename $SearchPath)
-[ -z $SearchPath ] && echo "No directory to search through" && exit 1
+[ ! -d $SearchPath ] && echo "No directory to search through" && exit 1
 FileToMerge="$(awk -F'=' '/FileToCopy/{print $2}' $ConfigFile)"
 [ -z $FileToMerge ] && echo "No file to copy" && exit 1
+
+# declare variables
+MergedFile=""
+FileToMergeList="FileToMergeList.txt"
+if [ -f "Merge.C"]; then
+	MergeMacro="$(realpath Merge.C)"
+else
+	MergeMacro="$HOME/.local/bin/Merge.C"
+fi
+
 echo "Merging runs in $SearchPath"
 echo "Merging files $FileToMerge"
 echo "Using Macro $MergeMacro"
 
 while read Run; do
-    echo "Start merging run $(basename $Run) in $(dirname $Run)"
+	echo "Start merging run $(basename $Run) in $(dirname $Run)"
 
 	# go into subdirectory
 	cd $Run

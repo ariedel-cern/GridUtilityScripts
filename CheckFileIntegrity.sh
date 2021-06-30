@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 28.06.2021
+# Last Modified Date: 30.06.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in a given directory and subdirectories
@@ -18,23 +18,42 @@ Check_Integrity() {
 	return 0
 }
 
+# parse arguments
+# expect $1 to be path to configuration file CopyFromGrid.config
+ConfigFile=${1:-CopyFromGrid.config}
+if [ ! -f $ConfigFile ]; then
+	echo "No local config file, fallback to global default"
+	ConfigFile=$HOME/config/CopyFromGrid.config
+fi
+
 # get variables from config file
-ConfigFile="config"
 [ ! -f $ConfigFile ] && echo "No config file" && exit 1
 SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
+[ -z $SearchPath ] && echo "No directory in config file" && exit 1
 SearchPath=$(basename $SearchPath)
-[ -z $SearchPath ] && echo "No directory to search through" && exit 1
-echo "Checking .root files in $SearchPath"
+[ ! -d $SearchPath ] && echo "No directory to search through" && exit 1
+GlobalLog="$(awk -F'=' '/GlobalLog/{print $2}' $ConfigFile)"
+[ -z $GlobalLog ] && echo "No global log file in config file" && exit 1
+echo $GlobalLog
+[ ! -f $GlobalLog ] && echo "No global log file found" && exit 1
 
-# counter for paralle jobs
-Counter=0
-# loop over all root files and check file integrity
+Files=$(find $SearchPath -type f -name "*.root")
+NumberOfFiles=$(wc -l <<<$Files)
+echo "Checking .root $NumberOfFiles files in $(realpath $SearchPath)"
+
+# count number of subshells
+CounterSubshells=0
+# count number of checked files
+CounterFiles=0
+
+# loop over all files and check file integrity
 while read File; do
 
 	# do not start too many jobs
-	if [ $Counter -ge $(nproc) ]; then
+	if [ $CounterSubshells -ge $(nproc) ]; then
 		wait
-		Counter=0
+		CounterSubshells=0
+		echo "$CounterFiles/$NumberOfFiles files checked"
 	fi
 
 	# test file in subshell
@@ -43,16 +62,20 @@ while read File; do
 		if ! Check_Integrity $File &>/dev/null; then
 			echo "Fail... remove $File"
 			rm $File
+			sed -i -e "/${File//\//\\/}/d" $GlobalLog
 		else
 			echo "Pass... keep $File"
 		fi
 	) &
 
-	((Counter++))
+	((CounterSubshells++))
+	((CounterFiles++))
 
-done < <(find $SearchPath -type f -name "*.root")
+done <<<$Files
 
 # wait for unfinished jobs
 wait
+echo "$CounterFiles/$NumberOfFiles files checked"
+echo "DONE"
 
 exit 0
