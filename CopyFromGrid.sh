@@ -13,7 +13,7 @@ trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 
 # parse arguments
 # expect $1 to be path to configuration file CopyFromGrid.config
-ConfigFile=${1:-config}
+ConfigFile=${1:-CopyFromGrid.config}
 if [ ! -f $ConfigFile ]; then
 	echo "No local config file, fallback to global default"
 	ConfigFile=$HOME/config/CopyFromGrid.config
