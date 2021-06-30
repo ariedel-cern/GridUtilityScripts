@@ -22,12 +22,13 @@ fi
 # declare variables
 GlobalLog=""
 ProcessLog=""
+SummaryLog=""
 SearchPath=""
 FileToCopy=""
 Pause=""
 ParallelJobs=""
-MaxCopyAttempts=""
 CopyAttempts=""
+MaxCopyAttempts=""
 RemoteFiles=""
 RemoteFile=""
 LocalFile=""
@@ -35,6 +36,9 @@ State=""
 NumberOfRemoteFiles=""
 NumberOfCopiedFiles=""
 NumberOfBlacklistedFiles=""
+Chunk=""
+ChunkSize=""
+FileCounter=""
 
 # cleanup and aggregate results into global logfile
 Cleanup() {
@@ -54,6 +58,8 @@ SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
 [ -z $SearchPath ] && echo "No directory to search through" && exit 1
 TmpDir="$(awk -F'=' '/TmpDir/{print $2}' $ConfigFile)"
 [ -z $TmpDir ] && echo "No temporary directory specified" && exit 1
+# create unique subfolder based on PID in $TmpDir
+TmpDir="${TmpDir}/${BASHPID}_CopyFromGrid"
 
 # create TmpDir if it does not exist already
 mkdir -p $TmpDir
@@ -70,6 +76,7 @@ if [ -f $GlobalLog ]; then
 			continue
 		else
 			# if not, remove the entry
+			echo "$LocalFile not found, remove entry..."
 			sed -i -e "/${RemoteFile//\//\\/}/d" $GlobalLog
 		fi
 	done < <(awk '/COPIED/{print $1}' $GlobalLog)
@@ -81,10 +88,6 @@ fi
 # start endless loop
 while [ $Flag -eq 0 ]; do
 
-	echo "Start endless loop iteration"
-	echo "Tail log files in $(realpath $TmpDir)"
-	echo "Gracefully stop with CRTL-C"
-
 	# load configuration in each iteration
 	[ ! -f $ConfigFile ] && echo "No config file" && exit 1
 	SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
@@ -94,31 +97,58 @@ while [ $Flag -eq 0 ]; do
 	Pause="$(awk -F'=' '/Pause/{print $2}' $ConfigFile)"
 	[ -z $Pause ] && echo "No Pause" && exit 1
 	ParallelJobs="$(awk -F'=' '/ParallelJobs/{print $2}' $ConfigFile)"
-	[ -z $ParallelJobs ] && echo "No number of parallel jobs" && exit 1
+	[ -z $ParallelJobs ] && echo "No number of subjobs" && exit 1
 	MaxCopyAttempts="$(awk -F'=' '/MaxCopyAttempts/{print $2}' $ConfigFile)"
-	[ -z $MaxCopyAttempts ] && echo "No nubmer of maximal retries" && exit 1
+	[ -z $MaxCopyAttempts ] && echo "No number of maximal copy attempts" && exit 1
 	ProcessLog="$(awk -F'=' '/ProcessLog/{print $2}' $ConfigFile)"
-	[ -z $ProcessLog ] && echo "No nubmer of maximal retries" && exit 1
+	[ -z $ProcessLog ] && echo "No log for subjobs specified" && exit 1
+	SummaryLog="$(awk -F'=' '/SummaryLog/{print $2}' $ConfigFile)"
+	[ -z $SummaryLog ] && echo "No log for summary specified" && exit 1
+	SummaryLog="${TmpDir}/${SummaryLog}"
+	: >$SummaryLog
+
+	# be verbose
+	echo "##############################################################################"
+	echo "##############################################################################"
+	echo "##############################################################################"
+	echo "Start endless loop iteration"
+	echo "Tail log files in $(realpath $TmpDir)"
+	echo "Tail and watch $(realpath $SummaryLog) for summary (no atomic write)"
+	echo "Gracefully stop with CRTL-C"
 
 	# search for remote files on grid
 	RemoteFiles="$(alien_find "alien://${SearchPath}/**/${FileToCopy}")"
 	[ -z RemoteFiles ] && echo "No files found on grid" && exit 1
 
+	# keep count of files
 	NumberOfRemoteFiles="$(wc -l <<<$RemoteFiles)"
 	NumberOfCopiedFiles="$(grep "COPIED" "$GlobalLog" | wc -l)"
 	NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$GlobalLog" | wc -l)"
 
+	# be more verbose
 	echo "$NumberOfCopiedFiles/$NumberOfRemoteFiles files are already copied to local machine"
 	echo "$NumberOfBlacklistedFiles/$NumberOfRemoteFiles files are blacklisted"
 	echo "$(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles))/$NumberOfRemoteFiles files are accounted for"
 
-	[ $(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles)) -gt $NumberOfRemoteFiles ] && echo "Something smells fishy"
+	# stop if all files are accounted for
+	if [ $(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles)) -eq $NumberOfRemoteFiles ]; then
+		echo "No more files left to copy"
+		break
+	fi
 
 	# start jobs in parallel for downloads
 	for ((i = 0; i < $ParallelJobs; i++)); do
-		echo "Start Process $i of $(($ParallelJobs - 1))"
+
+		# split number of found files into chunks
+		Chunk=$(split -n l/$((i + 1))/$ParallelJobs <<<$RemoteFiles)
+		ChunkSize=$(wc -l <<<$Chunk)
+
+		echo "Process $i of $(($ParallelJobs - 1)) is processing $ChunkSize files"
+		echo "Process_$i 0 $ChunkSize" >>$SummaryLog
+
 		# go into subshell
 		(
+			FileCounter=0
 			# loop over all remote files in this chunk
 			while read RemoteFile; do
 
@@ -128,42 +158,48 @@ while [ $Flag -eq 0 ]; do
 				State=$(grep $RemoteFile $GlobalLog | head -1 | awk '{print $2}')
 				CopyAttempts=$(grep "$RemoteFile" $GlobalLog | head -1 | awk '{print $3}')
 
-				# set default values if they were not found
+				# set default values if there was no entry
 				State=${State:=NOT_COPIED}
 				CopyAttempts=${CopyAttempts:=0}
 
 				# check if file is already copied or blacklisted
-				if [ $State = "BLACKLISTED" -o $State = "COPIED" ]; then
-					# if so, bail out
-					continue
+				if [ ! $State = "BLACKLISTED" -a ! $State = "COPIED" ]; then
+					# if not, copy it
+
+					# construct filename for the local file such that we preserve subdirectory structure from the grid
+					LocalFile="$(basename $SearchPath)${RemoteFile##${SearchPath}}"
+
+					# attempt to copy the file
+					while :; do
+						((CopyAttempts++))
+
+						# attempt to copy
+						if alien_cp "alien://${RemoteFile}" "$LocalFile" &>/dev/null; then
+							# if successful, bail out
+							State="COPIED"
+							break
+						fi
+
+						# check number of attempts, if greater then maximum
+						if [ $CopyAttempts -ge $MaxCopyAttempts ]; then
+							# bail out
+							State="BLACKLISTED"
+							break
+						fi
+					done
+
+					# create log entry
+					echo "$RemoteFile $State $CopyAttempts"
 				fi
 
-				# construct filename for the local file such that we preserve subdirectory structure from the grid
-				LocalFile="$(basename $SearchPath)${RemoteFile##${SearchPath}}"
+				# increase file counter
+				((FileCounter++))
 
-				# attempt to copy the file
-				while :; do
-					((CopyAttempts++))
-					# attempt to copy
-					if alien_cp "alien://${RemoteFile}" "$LocalFile" &>/dev/null; then
-						# if successful, bail out
-						State="COPIED"
-						break
-					fi
-
-					# check number of attempts, if greater then maximum
-					if [ $CopyAttempts -ge $MaxCopyAttempts ]; then
-						# bail out
-						State="BLACKLISTED"
-						break
-					fi
-				done
-
-				# create log entry
-				echo "$RemoteFile $State $CopyAttempts"
+				# change entry in summary
+				sed -i -e "$((i + 1)) c Process_$i $FileCounter $ChunkSize" $SummaryLog
 
 				# split all found remote files into chunks (without spliting lines)
-			done < <(split -n l/$((i + 1))/$ParallelJobs <<<$RemoteFiles)
+			done <<<$Chunk
 
 			# redirect to process log file
 		) >"${TmpDir}/${i}_${ProcessLog}" &
@@ -180,12 +216,16 @@ while [ $Flag -eq 0 ]; do
 	fi
 done
 
+echo "##############################################################################"
+echo "##############################################################################"
+echo "##############################################################################"
 echo "Broken out of endless loop"
 echo "Wait for last jobs to finish"
 wait
 Cleanup $GlobalLog $TmpDir $ProcessLog
+rm $SummaryLog
 
-#if the temporary directory where we aggregated the log files is empty, remove it
-# rmdir $TmpDir
+# try to remove TmpDir
+rmdir $TmpDir
 
 exit 0

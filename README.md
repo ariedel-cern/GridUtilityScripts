@@ -6,8 +6,8 @@ This a collection of scripts to ease the interaction with Grid during data analy
 
 You can either use the scripts directly from inside the repository or place them in PATH with the included `deploy.sh` script.
 The script assumes that `$HOME/.local/bin` is in your PATH.
-The scripts search for a file named `config` upon execution for the definition of certain variables.
-There is an example, `config.example`, included which lists all necessary variables that need to be defined.
+The scripts search for a file named `CopyFromGrid.config` upon execution for the definition of certain variables.
+There is an example, `CopyFromGrid.config.example`, included which lists all necessary variables that need to be defined.
 
 ### deploy.sh
 
