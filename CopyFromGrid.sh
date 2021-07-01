@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 30.06.2021
+# Last Modified Date: 01.07.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -70,7 +70,7 @@ if [ -f $GlobalLog ]; then
 	# if so, validate it
 	while read RemoteFile; do
 		LocalFile="$(basename $SearchPath)${RemoteFile##${SearchPath}}"
-		# check ift the file exists
+		# check if the file exists
 		if [ -f $LocalFile ]; then
 			# if so, bail out
 			continue
@@ -114,6 +114,7 @@ while [ $Flag -eq 0 ]; do
 	echo "Start endless loop iteration"
 	echo "Tail log files in $(realpath $TmpDir)"
 	echo "Tail and watch $(realpath $SummaryLog) for summary (no atomic write)"
+	echo "Masterjob PID: ${BASHPID}"
 	echo "Gracefully stop with CRTL-C"
 
 	# search for remote files on grid
@@ -143,7 +144,7 @@ while [ $Flag -eq 0 ]; do
 		Chunk=$(split -n l/$((i + 1))/$ParallelJobs <<<$RemoteFiles)
 		ChunkSize=$(wc -l <<<$Chunk)
 
-		echo "Process $i of $(($ParallelJobs - 1)) is processing $ChunkSize files"
+		# create entry in summary log
 		echo "Process_$i 0 $ChunkSize" >>$SummaryLog
 
 		# go into subshell
@@ -203,6 +204,10 @@ while [ $Flag -eq 0 ]; do
 
 			# redirect to process log file
 		) >"${TmpDir}/${i}_${ProcessLog}" &
+
+		# print to screen
+		echo "Process $i of $(($ParallelJobs - 1)) is processing $ChunkSize files: PID $(echo $!)"
+
 	done
 
 	echo "Wait for downloads to finish"

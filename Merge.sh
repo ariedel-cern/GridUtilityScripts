@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 30.06.2021
+# Last Modified Date: 01.07.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -27,7 +27,7 @@ FileToMerge="$(awk -F'=' '/FileToCopy/{print $2}' $ConfigFile)"
 # declare variables
 MergedFile=""
 FileToMergeList="FileToMergeList.txt"
-if [ -f "Merge.C"]; then
+if [ -f "Merge.C" ]; then
 	MergeMacro="$(realpath Merge.C)"
 else
 	MergeMacro="$HOME/.local/bin/Merge.C"
