@@ -2,21 +2,22 @@
 # File              : deploy.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 23.06.2021
+# Last Modified Date: 25.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
-echo 'Deploy Grid Utility Scripts to $HOME/.local/bin'
-echo '$HOME/.local/bin is assumed to be in your PATH'
+echo "Deploy Grid Utility Scripts to $HOME/.local/bin"
+echo "$HOME/.local/bin is assumed to be in your PATH"
 
-DeployPath="$HOME/.local/bin"
-GUSpath="$(dirname $(realpath $BASH_SOURCE[0]))"
+Path="$HOME/.local/bin"
+GridUtilityScripts="$(dirname $(realpath $BASH_SOURCE[0]))"
 
-mkdir -p $DeployPath 2>/dev/null
+mkdir -p $Path 2>/dev/null
 
-ln -sf $GUSpath/CopyFromGrid.sh $DeployPath/CopyFromGrid.sh
-ln -sf $GUSpath/CheckFileIntegrity.sh $DeployPath/CheckFileIntegrity.sh
-ln -sf $GUSpath/Merge.sh $DeployPath/Merge.sh
-ln -sf $GUSpath/Merge.C $DeployPath/Merge.C
-ln -sf $GUSpath/Resubmit.sh $DeployPath/Resubmit.sh
+ln -sf $GridUtilityScripts/SubmitJobs.sh $Path/SubmitJobs.sh
+ln -sf $GridUtilityScripts/CopyFromGrid.sh $Path/CopyFromGrid.sh
+ln -sf $GridUtilityScripts/CheckFileIntegrity.sh $Path/CheckFileIntegrity.sh
+ln -sf $GridUtilityScripts/Merge.sh $Path/Merge.sh
+ln -sf $GridUtilityScripts/Merge.C $Path/Merge.C
+ln -sf $GridUtilityScripts/Resubmit.sh $Path/Resubmit.sh
 
 exit 0
