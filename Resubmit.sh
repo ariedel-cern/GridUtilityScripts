@@ -13,7 +13,7 @@ trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 
 # global variables
 # list of error states where automatic resubmitting is reasonable
-RetryError="EV ESV ESP EIB EE"
+RetryError="EV ESV ESP EIB EE Z"
 Timeout="$(awk -F'=' '/Pause/{print $2}' CopyFromGrid.config)"
 Counter=0
 
