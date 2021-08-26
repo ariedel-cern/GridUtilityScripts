@@ -2,7 +2,7 @@
 # File              : deploy.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 25.08.2021
+# Last Modified Date: 26.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 echo "Deploy Grid Utility Scripts to $HOME/.local/bin"
@@ -13,6 +13,7 @@ GridUtilityScripts="$(dirname $(realpath $BASH_SOURCE[0]))"
 
 mkdir -p $Path 2>/dev/null
 
+ln -sf $GridUtilityScripts/GridTimeout.sh $Path/GridTimeout.sh
 ln -sf $GridUtilityScripts/InitAnalysis.sh $Path/InitAnalysis.sh
 ln -sf $GridUtilityScripts/SubmitJobs.sh $Path/SubmitJobs.sh
 ln -sf $GridUtilityScripts/Resubmit.sh $Path/Resubmit.sh

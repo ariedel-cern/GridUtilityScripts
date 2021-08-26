@@ -20,17 +20,6 @@ if [ $AnalysisMode = "local" ]; then
     exit 0
 fi
 
-Waiting() {
-    local time=$(($1 - 1))
-    while [ $time -ge 0 ]; do
-        echo -ne "Waiting: $time\033[0K\r"
-        sleep 1
-        ((time--))
-    done
-    echo
-    return 0
-}
-
 echo "Create working directory $GridWorkingDirAbs"
 alien_mkdir $GridWorkingDirAbs
 # alien_rm -rf $GridWorkingDirAbs
@@ -44,7 +33,7 @@ for Run in $RunNumber; do
 
     while [ $NumberActiveJobs -gt $Threshold ]; do
         echo "Exeeded threshold, wait for things to calm down..."
-        Waiting $Timeout
+        GridTimeout.sh $Timeout
     done
 
     echo "We are good to go!"

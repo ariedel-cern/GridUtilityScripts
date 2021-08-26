@@ -25,9 +25,9 @@ export GridOutputRootFile="AnalysisResults.root"
 # define directories and files on local machine
 export LocalWorkingDir="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 export LocalTmpDir="/tmp"
-export LocalCopyLog="CopyFromGrid.log"
-export LocalCopyProcessLog="Process.log"
-export LocalCopySummaryLog="Summary.log"
+export LocalCopyLog="CopyFromGridGloabl.log"
+export LocalCopyProcessLog="CopyFromGridProcess.log"
+export LocalCopySummaryLog="CopyFromGridSummary.log"
 
 # set analysis mode
 # has to be local or grid
