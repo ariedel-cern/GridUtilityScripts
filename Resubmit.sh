@@ -38,8 +38,8 @@ while [ $Flag -eq 0 ]; do
     [ $NumberOfFailedJobs -eq "0" ] && echo "There are no jobs in error state, Yuhuu" && exit 0
 
     echo "There are $NumberOfFailedJobs Jobs in error state!!!"
+    Counter=0
     while read Job; do
-        ((Counter++))
         JobID=$(awk '{print $2}' <<<$Job)
         JobErrorState=$(awk '{print $4}' <<<$Job)
         if [[ $RetryError =~ $JobErrorState ]]; then
@@ -48,6 +48,7 @@ while [ $Flag -eq 0 ]; do
             echo "Clean up $JobWorkDir"
             alien_rm -rf $JobWorkDir 2>/dev/null
             alien.py resubmit $JobID
+            ((Counter++))
             echo "Resubmitted ${Counter}/${NumberOfFailedJobs}"
             [ $? -eq 122 ] && echo "Reached limit. Wait for next round..." && break
         else

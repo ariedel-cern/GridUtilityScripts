@@ -7,7 +7,7 @@
 
 # submit jobs to grid
 
-Threshold=1400
+Threshold=1350
 
 # source config file
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
@@ -21,8 +21,8 @@ if [ $AnalysisMode = "local" ]; then
 fi
 
 echo "Create working directory $GridWorkingDirAbs"
+alien_mv $GridWorkingDirAbs "${GridWorkingDirAbs}.bak"
 alien_mkdir $GridWorkingDirAbs
-# alien_rm -rf $GridWorkingDirAbs
 
 # submit jobs run by run
 for Run in $RunNumber; do
