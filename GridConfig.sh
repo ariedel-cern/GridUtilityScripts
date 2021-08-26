@@ -35,7 +35,8 @@ export AnalysisMode="local"
 
 # when runnnig on grid
 # has to be test, offline, submit, full or terminate
-export GridRunMode="test"
+# for submission, set runmode to offline
+export GridRunMode="offline"
 # set analysis tag
 export AliPhysicsTag="vAN-20210804_ROOT6-1"
 export InputFilesPerSubjob="50"

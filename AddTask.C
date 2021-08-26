@@ -5,29 +5,19 @@
  * Last Modified Date: 26.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
-// Remark: This one is reviewed and refurbished as of 20210504 to work with ROOT
-// 6
-//         For the same legacy macros running with ROOT 5, see
-//         ~/Students/ThreeMacros/ROOT5/
 
-/////////////////////////////////////////////////////////////////////////////////////////////
-//
 // AddTask* macro for flow analysis
 // Creates a Flow Event task and adds it to the analysis manager.
 // Sets the cuts using the correction framework (CORRFW) classes.
 // Also creates Flow Analysis tasks and connects them to the output of the flow
 // event task.
-//
-/////////////////////////////////////////////////////////////////////////////////////////////
 
 void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
              Bool_t bRunOverAOD = kTRUE) {
-  // File name:
-  TString fileName(std::getenv("GridOutputRootFile"));
+  TString OutputFile(std::getenv("GridOutputRootFile"));
 
   // Get the pointer to the existing analysis manager via the static access
   // method.
-  //==============================================================================
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   if (!mgr) {
     Error("AddTask.C macro", "No analysis manager to connect to.");
@@ -36,7 +26,6 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
 
   // Check the analysis type using the event handlers connected to the analysis
   // manager. The availability of MC handler can also be checked here.
-  //==============================================================================
   if (!mgr->GetInputEventHandler()) {
     Error("AddTask.C macro", "This task requires an input event handler");
     return nullptr;
@@ -60,12 +49,16 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackControlHistogramBinning(kDCAZ, 100, -5., 5.);
   task->SetTrackControlHistogramBinning(kDCAXY, 100, -5., 5.);
   // setters for event control histograms
-  task->SetEventControlHistogramBinning(kMUL, 200, 0, 20000);
+  task->SetEventControlHistogramBinning(kMUL, 2000, 0, 20000);
+  task->SetEventControlHistogramBinning(kMULQ, 300, 0, 3000);
+  task->SetEventControlHistogramBinning(kMULW, 300, 0, 3000);
+  task->SetEventControlHistogramBinning(kMULREF, 300, 0, 3000);
+  task->SetEventControlHistogramBinning(kNCONTRIB, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kCEN, 10, centerMin, centerMax);
-  task->SetEventControlHistogramBinning(kNCONTRIB, 100, 0, 10000);
-  task->SetEventControlHistogramBinning(kX, 20, -20, 20);
-  task->SetEventControlHistogramBinning(kY, 20, -20, 20);
-  task->SetEventControlHistogramBinning(kZ, 20, -20, 20);
+  task->SetEventControlHistogramBinning(kX, 24, -12, 12);
+  task->SetEventControlHistogramBinning(kY, 24, -12, 12);
+  task->SetEventControlHistogramBinning(kZ, 24, -12, 12);
+  task->SetEventControlHistogramBinning(kVPOS, 20, 0, 20);
   // set centrality selection criterion
   task->SetCentralityEstimator("V0M");
 
@@ -80,17 +73,22 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackCuts(kDCAZ, -3.0, 3.0);
   task->SetTrackCuts(kDCAXY, -3.0, 3.0);
   // setters for event cuts
-  task->SetEventCuts(kMUL, 10, 20000);
+  task->SetEventCuts(kMUL, 2, 20000);
+  task->SetEventCuts(kMULQ, 2, 3000);
+  task->SetEventCuts(kMULW, 2, 3000);
+  task->SetEventCuts(kMULREF, 2, 3000);
+  task->SetEventCuts(kNCONTRIB, 2, 3000);
   task->SetEventCuts(kCEN, centerMin, centerMax);
-  task->SetEventCuts(kNCONTRIB, 5, 1e6);
   task->SetEventCuts(kX, -10., 10.);
   task->SetEventCuts(kY, -10., 10.);
   task->SetEventCuts(kZ, -10., 10.);
+  task->SetEventCuts(kVPOS, 1e-6, 18.);
   // other cuts
   task->SetFilterbit(128);
   task->SetPrimaryOnlyCut(kTRUE);
+  task->CenCorCut(1.1, 2);
 
-  // setters for final result profiles
+  // setters for correlators we want to compute
   std::vector<std::vector<Int_t>> correlators = {{-2, 2}};
   task->SetCorrelators(correlators);
 
@@ -99,16 +97,13 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   cout << "Added to manager: " << task->GetName() << endl;
 
   // Define input/output containers:
-  TString output = "AnalysisResults.root";
-  /* determined by the framework, this is TDirectoryFile holding all lists */
-  output += ":outputAnalysis";
+  OutputFile += ":outputAnalysis";
 
   AliAnalysisDataContainer *cinput = mgr->GetCommonInputContainer();
   AliAnalysisDataContainer *coutput = NULL;
-  coutput = mgr->CreateContainer(task->GetName(), TList::Class(),
-                                 AliAnalysisManager::kOutputContainer, output);
+  coutput =
+      mgr->CreateContainer(task->GetName(), TList::Class(),
+                           AliAnalysisManager::kOutputContainer, OutputFile);
   mgr->ConnectInput(task, 0, cinput);
   mgr->ConnectOutput(task, 1, coutput);
-
-} // void AddTaskTEST(Float_t centerMin=0.,Float_t centerMax=100.,TString
-  // fileNameBase="AnalysisResults",Bool_t bRunOverAOD=kFALSE)
+}
