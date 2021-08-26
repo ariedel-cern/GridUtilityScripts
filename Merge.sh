@@ -2,58 +2,45 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 01.07.2021
+# Last Modified Date: 26.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
 
-# parse arguments
-# expect $1 to be path to configuration file CopyFromGrid.config
-ConfigFile=${1:-CopyFromGrid.config}
-if [ ! -f $ConfigFile ]; then
-	echo "No local config file, fallback to global default"
-	ConfigFile=$HOME/config/CopyFromGrid.config
-fi
-
-# get variables from config file
-[ ! -f $ConfigFile ] && echo "No config file" && exit 1
-SearchPath="$(awk -F'=' '/SearchPath/{print $2}' $ConfigFile)"
-[ -z $SearchPath ] && echo "No directory in config file" && exit 1
-SearchPath=$(basename $SearchPath)
-[ ! -d $SearchPath ] && echo "No directory to search through" && exit 1
-FileToMerge="$(awk -F'=' '/FileToCopy/{print $2}' $ConfigFile)"
-[ -z $FileToMerge ] && echo "No file to copy" && exit 1
+# source config file
+[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
+source GridConfig.sh
 
 # declare variables
 MergedFile=""
 FileToMergeList="FileToMergeList.txt"
 if [ -f "Merge.C" ]; then
-	MergeMacro="$(realpath Merge.C)"
+    MergeMacro="$(realpath Merge.C)"
 else
-	MergeMacro="$HOME/.local/bin/Merge.C"
+    MergeMacro="$HOME/.local/bin/Merge.C"
 fi
 
-echo "Merging runs in $SearchPath"
-echo "Merging files $FileToMerge"
+echo "Merging runs in $GridOutputDirRel"
+echo "Merging files $GridOutputRootFile"
 echo "Using Macro $MergeMacro"
 
 while read Run; do
-	echo "Start merging run $(basename $Run) in $(dirname $Run)"
+    echo "Start merging run $(basename $Run) in $(dirname $Run)"
 
-	# go into subdirectory
-	cd $Run
+    # go into subdirectory
+    cd $Run
 
-	# create list of files we want to merge and write the list to a file
-	find . -type f -name $FileToMerge >$FileToMergeList
+    # create list of files we want to merge and write the list to a file
+    find . -type f -name $GridOutputRootFile >$FileToMergeList
 
-	# construct filename for merged file
-	MergedFile="$(basename $Run)_Merged.root"
+    # construct filename for merged file
+    MergedFile="$(basename $Run)_Merged.root"
 
-	# merge files
-	root -b -l -q $MergeMacro\(\"$FileToMergeList\",\"$MergedFile\"\)
+    # merge files
+    root -b -l -q $MergeMacro\(\"$FileToMergeList\",\"$MergedFile\"\)
 
-	# go back
-	cd - >/dev/null
-done < <(find $SearchPath -maxdepth 1 -mindepth 1 -type d)
+    # go back
+    cd - >/dev/null
+done < <(find $GridOutputDirRel -maxdepth 1 -mindepth 1 -type d)
 
 exit 0
