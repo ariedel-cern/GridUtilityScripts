@@ -13,7 +13,7 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   AliAnalysisAlien *plugin = new AliAnalysisAlien();
 
   plugin->SetRunMode(std::getenv("GridRunMode"));
-  plugin->SetNtestFiles(5); // Relevant only for run mode "test". By default
+  plugin->SetNtestFiles(2); // Relevant only for run mode "test". By default
   // 10 files will be copied locally and analysed in "test" mode
 
   // Set versions of used packages
@@ -93,13 +93,13 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->AddDataFile("Run137161.RAW.tag.root");
   // plugin->AddDataFile("file:///scratch/ga45can/tmp/aliceAnalysis/MCclosure/"
   //                     "Run137161.RAW.tag.root");
-  // plugin->SetCheckCopy(kFALSE);
+  plugin->SetCheckCopy(kFALSE);
   // Define alien work directory where all files will be copied. Relative to
   // alien $HOME.
-  plugin->SetGridWorkingDir(std::getenv("GridWorkingDir"));
+  plugin->SetGridWorkingDir(std::getenv("GridWorkingDirRel"));
   // Declare alien output directory. Relative to working directory.
-  plugin->SetGridOutputDir(
-      std::getenv("GridOutputDir")); // In this case will be $HOME/work/output
+  plugin->SetGridOutputDir(std::getenv(
+      "GridOutputDirRel")); // In this case will be $HOME/work/output
   // Declare the analysis source files names separated by blancs. To be compiled
   // runtime using ACLiC on the worker nodes:
   // ... (if this is needed see in official tutorial example how to do it!)
@@ -131,7 +131,7 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->SetOutputArchive("log_archive.zip:");
   // Optionally set a name for the generated analysis macro (default
   // MyAnalysis.C)
-  plugin->SetAnalysisMacro("flowAnalysis.C");
+  plugin->SetAnalysisMacro(Form("flowAnalysis_%d.C", RunNumber));
   // Optionally set maximum number of input files/subjob (default 100, put 0 to
   // ignore)
   plugin->SetSplitMaxInputFileNumber(
@@ -152,7 +152,7 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // Optionally set input format (default xml-single)
   plugin->SetInputFormat("xml-single");
   // Optionally modify the name of the generated JDL (default analysis.jdl)
-  plugin->SetJDLName("flowAnalysis.jdl");
+  plugin->SetJDLName(Form("flowAnalysis_%d.jdl", RunNumber));
   // Optionally modify job price (default 1)
   plugin->SetPrice(1);
   // Optionally modify split mode (default 'se')

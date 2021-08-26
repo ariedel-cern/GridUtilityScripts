@@ -2,7 +2,7 @@
  * File              : run.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 25.08.2021
+ * Last Modified Date: 26.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -58,7 +58,6 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
   } else {
     bRunOverAOD = kFALSE;
   }
-  TString commonOutputFileName = std::getenv("GridOutputRootFile");
 
   // centrality bins
   // Int_t binfirst = 0; // where do we start numbering bins
@@ -131,9 +130,8 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
     Float_t highCentralityBinEdge = CentralityBins.at(i + 1);
     Printf("\nWagon for centrality bin %i: %.1f-%.1f", int(i),
            lowCentralityBinEdge, highCentralityBinEdge);
-    AddTask(lowCentralityBinEdge, highCentralityBinEdge, commonOutputFileName,
-            bRunOverAOD);
-  } // end of for (Int_t i=binfirst;i<binlast+1;i++)
+    AddTask(lowCentralityBinEdge, highCentralityBinEdge, bRunOverAOD);
+  }
 
   // j) Enable debug printouts:
   mgr->SetDebugLevel(2);

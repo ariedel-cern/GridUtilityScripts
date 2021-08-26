@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 25.08.2021
+ * Last Modified Date: 26.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 // Remark: This one is reviewed and refurbished as of 20210504 to work with ROOT
@@ -21,11 +21,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
-             TString fileNameBase = "AnalysisResults",
              Bool_t bRunOverAOD = kTRUE) {
   // File name:
-  TString fileName(fileNameBase);
-  fileName.Append(".root");
+  TString fileName(std::getenv("GridOutputRootFile"));
 
   // Get the pointer to the existing analysis manager via the static access
   // method.

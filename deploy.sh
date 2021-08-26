@@ -13,11 +13,12 @@ GridUtilityScripts="$(dirname $(realpath $BASH_SOURCE[0]))"
 
 mkdir -p $Path 2>/dev/null
 
+ln -sf $GridUtilityScripts/InitAnalysis.sh $Path/InitAnalysis.sh
 ln -sf $GridUtilityScripts/SubmitJobs.sh $Path/SubmitJobs.sh
+ln -sf $GridUtilityScripts/Resubmit.sh $Path/Resubmit.sh
 ln -sf $GridUtilityScripts/CopyFromGrid.sh $Path/CopyFromGrid.sh
 ln -sf $GridUtilityScripts/CheckFileIntegrity.sh $Path/CheckFileIntegrity.sh
 ln -sf $GridUtilityScripts/Merge.sh $Path/Merge.sh
 ln -sf $GridUtilityScripts/Merge.C $Path/Merge.C
-ln -sf $GridUtilityScripts/Resubmit.sh $Path/Resubmit.sh
 
 exit 0

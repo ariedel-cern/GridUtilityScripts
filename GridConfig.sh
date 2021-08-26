@@ -2,21 +2,24 @@
 # File              : GridConfig.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 25.08.2021
+# Last Modified Date: 26.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
 
 # miscellaneous variables
 export TaskBaseName="Test"
-export Pause="300"
+export Timeout="300"
 export ParallelJobs="10"
 export MaxCopyAttempts="5"
 
 # define directories and files on grid
-export GridWorkingDir="/alice/cern.ch/user/a/ariedel/20210408_LHC10h_Validation"
+export GridHomeDir="/alice/cern.ch/user/a/ariedel"
+export GridWorkingDirRel="20210408_LHC10h_Validation"
+export GridWorkingDirAbs="${GridHomeDir}/${GridWorkingDir}"
 # relative to working directory on grid
-export GridOutputDir="output"
+export GridOutputDirRel="output"
+export GridOutputDirAbs="${GridWorkingDirAbs}/${GridOutputDirRel}"
 export GridOutputRootFile="AnalysisResults.root"
 
 # define directories and files on local machine
@@ -53,14 +56,16 @@ export RunOverAOD="1"
 # export RunOverAOD="0"
 
 # configure centrality bins
-export CentralityBins=$(cat <<'EOF'
+export CentralityBins=$(
+    cat <<'EOF'
 0
 100
 EOF
 )
 
 # configure run numbers
-export RunNumber=$(cat <<'EOF'
+export RunNumber=$(
+    cat <<'EOF'
 137161
 EOF
 )
