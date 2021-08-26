@@ -4,10 +4,14 @@ This a collection of scripts to ease the interaction with Grid during data analy
 
 ## Usage
 
-You can either use the scripts directly from inside the repository or place them in `$PATH` with the included `deploy.sh` script.
+Place the scirpts in `$PATH` with the included `deploy.sh` script.
 The script assumes that `$HOME/.local/bin` is in your `$PATH`.
-The scripts source `GridConfig.sh` upon execution to export environment variables which will configure the analysis.
+The scripts source `GridConfig.sh` upon execution to set environment variables.
+Both the scirpts and macros pull those variables from the environment to configure the analysis.
 There is an example `GridConfig.sh` included which lists all necessary variables that need to be defined.
+The only files which need to be edited to configure a certain analysis after initalizing it is `GridConfig.sh` and `AddTask.C`.
+
+## Scirpts
 
 ### deploy.sh
 Creating symlinks for the utility scripts into `$HOME/.local/bin` which is assumed to be in your `$PATH`.
@@ -35,3 +39,14 @@ Kill all jobs which are not in DONE state. Nice for wrapping up the analysis.
 
 ### KillAllFailedJobs.sh
 Similar to above, but just killing all jobs which in an ERROR state.
+
+## Steering macros
+
+### run.C
+Main steering macro. Calls all other macros to run the analysis.
+
+### CreateAlienHandler.C
+Configure jdl files so we do not have to do it manually.
+
+### AddTask.C
+Configure task by editing this macro.
