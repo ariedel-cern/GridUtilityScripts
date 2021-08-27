@@ -49,16 +49,16 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackControlHistogramBinning(kDCAZ, 100, -5., 5.);
   task->SetTrackControlHistogramBinning(kDCAXY, 100, -5., 5.);
   // setters for event control histograms
-  task->SetEventControlHistogramBinning(kMUL, 2000, 0, 20000);
+  task->SetEventControlHistogramBinning(kMUL, 2000, 0, 1600);
   task->SetEventControlHistogramBinning(kMULQ, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kMULW, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kMULREF, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kNCONTRIB, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kCEN, 10, centerMin, centerMax);
-  task->SetEventControlHistogramBinning(kX, 24, -12, 12);
-  task->SetEventControlHistogramBinning(kY, 24, -12, 12);
-  task->SetEventControlHistogramBinning(kZ, 24, -12, 12);
-  task->SetEventControlHistogramBinning(kVPOS, 20, 0, 20);
+  task->SetEventControlHistogramBinning(kX, 120, -12, 12);
+  task->SetEventControlHistogramBinning(kY, 120, -12, 12);
+  task->SetEventControlHistogramBinning(kZ, 120, -12, 12);
+  task->SetEventControlHistogramBinning(kVPOS, 100, 0, 20);
   // set centrality selection criterion
   task->SetCentralityEstimator("V0M");
 
@@ -73,7 +73,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackCuts(kDCAZ, -3.0, 3.0);
   task->SetTrackCuts(kDCAXY, -3.0, 3.0);
   // setters for event cuts
-  task->SetEventCuts(kMUL, 2, 20000);
+  task->SetEventCuts(kMUL, 2, 1600);
   task->SetEventCuts(kMULQ, 2, 3000);
   task->SetEventCuts(kMULW, 2, 3000);
   task->SetEventCuts(kMULREF, 2, 3000);

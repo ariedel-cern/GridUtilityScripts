@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 27.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -68,15 +68,16 @@ while [ $Flag -eq 0 ]; do
 
     # resource config file
     source GridConfig.sh
-    : >$LocalCopySummaryLog
     touch $LocalCopyLog
 
     echo "Job PID: ${BASHPID}"
     LocalTmpDir="$LocalTmpDir/CopyFromGrid_${BASHPID}"
     mkdir -p $LocalTmpDir
+    LocalCopySummaryLog="$LocalTmpDir/$LocalCopySummaryLog"
+    : >LocalCopySummaryLog
 
     echo "Tail log files in $(realpath $LocalTmpDir)"
-    echo "Tail and watch $(realpath ${LocalTmpDir}/${LocalCopySummaryLog}) for summary (no atomic write)"
+    echo "Tail and watch $(realpath ${LocalCopySummaryLog}) for summary (no atomic write)"
 
     # search for remote files on grid
     RemoteFiles="$(alien_find "alien://${GridWorkingDirAbs}/**/${GridOutputRootFile}")"
@@ -85,7 +86,7 @@ while [ $Flag -eq 0 ]; do
     # keep count of files
     NumberOfRemoteFiles="$(wc -l <<<$RemoteFiles)"
     NumberOfCopiedFiles="$(grep "COPIED" "$LocalCopyLog" | wc -l)"
-    NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$LocalCopySummaryLog" | wc -l)"
+    NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$LocalCopyLog" | wc -l)"
 
     # be more verbose
     echo "$NumberOfCopiedFiles/$NumberOfRemoteFiles files are already copied to local machine"
@@ -177,6 +178,7 @@ while [ $Flag -eq 0 ]; do
     # only cleanup and pause when no interrupt signal was sent
     if [ $Flag -eq 0 ]; then
         Cleanup $LocalCopyLog $LocalTmpDir $LocalCopyProcessLog
+        rm $LocalCopySummaryLog
         GridTimeout.sh $Timeout
     fi
 done
@@ -187,6 +189,7 @@ echo "##########################################################################
 echo "Wait for last jobs to finish"
 wait
 Cleanup $LocalCopyLog $LocalTmpDir $LocalCopyProcessLog
+rm $LocalCopySummaryLog 2>/dev/null
 rmdir $LocalTmpDir
 
 exit 0
