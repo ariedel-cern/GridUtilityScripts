@@ -2,7 +2,7 @@
  * File              : CreateAlienHandler.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 31.05.2021
- * Last Modified Date: 26.08.2021
+ * Last Modified Date: 27.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -131,7 +131,7 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->SetOutputArchive("log_archive.zip:");
   // Optionally set a name for the generated analysis macro (default
   // MyAnalysis.C)
-  plugin->SetAnalysisMacro("flowAnalysis.C");
+  plugin->SetAnalysisMacro(std::getenv("AnalysisMacroFileName"));
   // Optionally set maximum number of input files/subjob (default 100, put 0 to
   // ignore)
   plugin->SetSplitMaxInputFileNumber(
@@ -152,7 +152,7 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // Optionally set input format (default xml-single)
   plugin->SetInputFormat("xml-single");
   // Optionally modify the name of the generated JDL (default analysis.jdl)
-  plugin->SetJDLName("flowAnalysis.jdl");
+  plugin->SetJDLName(std::getenv("JdlFileName"));
   // Optionally modify job price (default 1)
   plugin->SetPrice(1);
   // Optionally modify split mode (default 'se')

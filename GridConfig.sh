@@ -2,7 +2,7 @@
 # File              : GridConfig.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 27.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -15,12 +15,15 @@ export MaxCopyAttempts="5"
 
 # define directories and files on grid
 export GridHomeDir="/alice/cern.ch/user/a/ariedel"
-export GridWorkingDirRel="20210408_LHC10h_Validation"
-export GridWorkingDirAbs="${GridHomeDir}/${GridWorkingDir}"
+export GridWorkingDirRel="20210825_LHC10h_Test0"
+export GridWorkingDirAbs="${GridHomeDir}/${GridWorkingDirRel}"
 # relative to working directory on grid
 export GridOutputDirRel="output"
 export GridOutputDirAbs="${GridWorkingDirAbs}/${GridOutputDirRel}"
 export GridOutputRootFile="AnalysisResults.root"
+export GridXmlCollection="${GridHomeDir}/XMLcollections/LHC10h/pass2/AOD/AOD160"
+export JdlFileName="flowAnalysis.jdl"
+export AnalysisMacroFileName="flowAnalysis.C"
 
 # define directories and files on local machine
 export LocalWorkingDir="$(realpath $(dirname ${BASH_SOURCE[0]}))"
@@ -38,7 +41,7 @@ export AnalysisMode="local"
 # for submission, set runmode to offline
 export GridRunMode="offline"
 # set analysis tag
-export AliPhysicsTag="vAN-20210804_ROOT6-1"
+export AliPhysicsTag="vAN-20210825_ROOT6-1"
 export InputFilesPerSubjob="50"
 export RunsPerMasterjob="1"
 export MasterResubmitThreshold="50"
@@ -60,7 +63,7 @@ export RunOverAOD="1"
 export CentralityBins=$(
     cat <<'EOF'
 0
-100
+80
 EOF
 )
 
@@ -162,5 +165,7 @@ EOF
 # 137162
 # 137161
 # EOF)
+
+echo "Sourced $(basename ${BASH_SOURCE[0]}) at $(date "+%Y-%m-%d_%H:%M:%S")"
 
 return 0

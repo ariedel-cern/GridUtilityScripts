@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 26.08.2021
+ * Last Modified Date: 27.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -86,7 +86,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   // other cuts
   task->SetFilterbit(128);
   task->SetPrimaryOnlyCut(kTRUE);
-  task->CenCorCut(1.1, 2);
+  task->SetCenCorCut(1.1, 2);
 
   // setters for correlators we want to compute
   std::vector<std::vector<Int_t>> correlators = {{-2, 2}};
