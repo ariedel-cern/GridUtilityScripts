@@ -2,7 +2,7 @@
 # File              : KillAllJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 05.08.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 27.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 #clean up and kill all running jobs on the Grid
@@ -11,6 +11,7 @@
 Subjobs=""
 MasterjobCounter=0
 SubjobCounter=0
+NumberOfSubjobs=0
 
 # get all masterjobs not in Done state
 Masterjobs="$(alien_ps -M | awk '$4!="D" {print $2}')"
@@ -24,14 +25,13 @@ for Masterjob in $Masterjobs; do
     echo "Lets get rid of Masterjob $Masterjob"
     # get all subjobs not in Done state
     Subjobs="$(alien_ps -m $Masterjob | awk '$4!="D" {print $2}')"
-    NumberOfSubjobs="$(wc -w $ <<<$Subjobs)"
-    echo "To be safe, we will kill its $(wc -w <<<$SubJobs) Subjobs explicitly"
+    NumberOfSubjobs="$(wc -w <<<$Subjobs)"
+    echo "To be safe, we will kill its $NumberOfSubjobs Subjobs explicitly"
     SubjobCounter=0
     for Subjob in $Subjobs; do
         echo "Kill subjob $Subjob"
         alien.py kill $Subjob
         ((SubjobCounter++))
-        echo "Killed ${SubjobCounter}/${NumberOfSubjobs}"
     done
 
     echo "Kill the Masterjob $Masterjob itself"
