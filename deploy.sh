@@ -2,7 +2,7 @@
 # File              : deploy.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 echo "Deploy Grid Utility Scripts to $HOME/.local/bin"
@@ -21,5 +21,7 @@ ln -sf $GridUtilityScripts/CopyFromGrid.sh $Path/CopyFromGrid.sh
 ln -sf $GridUtilityScripts/CheckFileIntegrity.sh $Path/CheckFileIntegrity.sh
 ln -sf $GridUtilityScripts/Merge.sh $Path/Merge.sh
 ln -sf $GridUtilityScripts/Merge.C $Path/Merge.C
+ln -sf $GridUtilityScripts/ReTerminate.sh $Path/ReTerminate.sh
+ln -sf $GridUtilityScripts/ReTerminate.C $Path/ReTerminate.C
 
 exit 0

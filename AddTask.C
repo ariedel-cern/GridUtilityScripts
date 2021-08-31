@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 27.08.2021
+ * Last Modified Date: 31.08.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -97,7 +97,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   cout << "Added to manager: " << task->GetName() << endl;
 
   // Define input/output containers:
-  OutputFile += ":outputAnalysis";
+  OutputFile += ":" + std::getenv("OutputTDirectoryFile");
 
   AliAnalysisDataContainer *cinput = mgr->GetCommonInputContainer();
   AliAnalysisDataContainer *coutput = NULL;

@@ -2,7 +2,7 @@
 # File              : KillAllJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 05.08.2021
-# Last Modified Date: 27.08.2021
+# Last Modified Date: 28.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 #clean up and kill all running jobs on the Grid
@@ -14,7 +14,7 @@ SubjobCounter=0
 NumberOfSubjobs=0
 
 # get all masterjobs not in Done state
-Masterjobs="$(alien_ps -M | awk '$4!="D" {print $2}')"
+Masterjobs="$(alien_ps -M | awk '$4!="D" && $4!="K" {print $2}')"
 NumberOfMasterJobs="$(wc -w <<<$Masterjobs)"
 
 [ $NumberOfMasterJobs -eq 0 ] && echo "All Masterjobs are done. Get out!" && exit 0
@@ -24,7 +24,7 @@ echo "$NumberOfMasterJobs Masterjobs are not DONE. Let's kill them all!"
 for Masterjob in $Masterjobs; do
     echo "Lets get rid of Masterjob $Masterjob"
     # get all subjobs not in Done state
-    Subjobs="$(alien_ps -m $Masterjob | awk '$4!="D" {print $2}')"
+    Subjobs="$(alien_ps -m $Masterjob | awk '$4!="D" && $4!="K" {print $2}')"
     NumberOfSubjobs="$(wc -w <<<$Subjobs)"
     echo "To be safe, we will kill its $NumberOfSubjobs Subjobs explicitly"
     SubjobCounter=0

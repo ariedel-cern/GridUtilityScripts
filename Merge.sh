@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run

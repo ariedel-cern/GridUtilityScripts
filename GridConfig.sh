@@ -2,13 +2,14 @@
 # File              : GridConfig.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 27.08.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
 
 # miscellaneous variables
 export TaskBaseName="Test"
+export OutputTDirectoryFile=:"OutputAnalysis"
 export Timeout="300"
 export ParallelJobs="10"
 export MaxCopyAttempts="5"
