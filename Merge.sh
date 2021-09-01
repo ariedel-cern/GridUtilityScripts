@@ -11,7 +11,7 @@
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
-# declare variables
+# get macro we are wrapping around
 MergedFile=""
 FilesToMergeList="FilesToMergeList.txt"
 if [ -f "$GRID_UTILITY_SCRIPTS/Merge.C" ]; then
@@ -30,7 +30,6 @@ while read Run; do
     echo "Start merging run $(basename $Run) in $(dirname $Run)"
 
     # go into subdirectory
-    echo "Push into subdirectory"
     pushd $Run
 
     # create list of files we want to merge and write the list to a file
@@ -43,7 +42,6 @@ while read Run; do
     aliroot -b -l -q $MergeMacro\(\"$FilesToMergeList\",\"$MergedFile\"\)
 
     # go back
-    echo "Pop back out"
     popd
 
 done < <(find $GridOutputDirRel -maxdepth 1 -mindepth 1 -type d)

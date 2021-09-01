@@ -14,6 +14,7 @@ source GridConfig.sh
 # if running locally, call aliroot and run.C macro with default values and bail out
 if [ $AnalysisMode = "local" ]; then
     echo "Running locally over $DataDir"
+    echo "in centrality bins $(tr '\n' ' ' <<<$CentralityBins)"
     aliroot -q -l -b run.C
     exit 0
 fi

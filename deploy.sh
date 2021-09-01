@@ -21,5 +21,6 @@ ln -sf $GridUtilityScripts/CopyFromGrid.sh $Path/CopyFromGrid.sh
 ln -sf $GridUtilityScripts/CheckFileIntegrity.sh $Path/CheckFileIntegrity.sh
 ln -sf $GridUtilityScripts/Merge.sh $Path/Merge.sh
 ln -sf $GridUtilityScripts/ReTerminate.sh $Path/ReTerminate.sh
+ln -sf $GridUtilityScripts/ComputeWeights.sh $Path/ComputeWeights.sh
 
 exit 0
