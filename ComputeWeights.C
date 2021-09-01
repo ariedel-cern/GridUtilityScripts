@@ -67,7 +67,7 @@ Int_t ComputeWeights(const char *dataFileName) {
   phiWeightHist->SetTitle("#varphi weights");
   Double_t scale = phiHist->GetEntries() / phiHist->GetNbinsX();
   for (Int_t i = 1; i <= phiHist->GetNbinsX(); i++) {
-    phiWeightHist->SetBinContent(i, scale / phiHist->GetBinContent(i));
+    phiWeightHist->SetBinContent(i, scale * (1. / phiHist->GetBinContent(i)));
   }
 
   // compute pt weights
@@ -76,7 +76,9 @@ Int_t ComputeWeights(const char *dataFileName) {
     ptWeightHist->SetTitle("p_{T} weights");
     ptWeightHist->Divide(ptHistSim);
 
-    scale = ptHistReco->GetEntries() / ptHistReco->GetNbinsX();
+    // scale with the inverse ratio of the average bin content
+    scale = (ptHistSim->GetEntries() / ptHistSim->GetNbinsX()) /
+            (ptHistReco->GetEntries() / ptHistReco->GetNbinsX());
     for (Int_t i = 1; i <= ptWeightHist->GetNbinsX(); i++) {
       ptWeightHist->SetBinContent(i, scale * ptWeightHist->GetBinContent(i));
     }
@@ -88,7 +90,9 @@ Int_t ComputeWeights(const char *dataFileName) {
     etaWeightHist->Divide(etaHistSim);
     etaWeightHist->SetTitle("#eta weights");
 
-    scale = etaHistReco->GetEntries() / etaHistReco->GetNbinsX();
+    // scale with the inverse ratio of the average bin content
+    scale = (etaHistSim->GetEntries() / etaHistSim->GetNbinsX()) /
+            (etaHistReco->GetEntries() / etaHistReco->GetNbinsX());
     for (Int_t i = 1; i <= etaWeightHist->GetNbinsX(); i++) {
       etaWeightHist->SetBinContent(i, scale * etaWeightHist->GetBinContent(i));
     }
