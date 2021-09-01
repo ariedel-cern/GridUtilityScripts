@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 31.08.2021
+ * Last Modified Date: 01.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -21,7 +21,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   if (!mgr) {
     Error("AddTask.C macro", "No analysis manager to connect to.");
-    return NULL;
+    return nullptr;
   }
 
   // Check the analysis type using the event handlers connected to the analysis
@@ -39,6 +39,9 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   // setters for qa histograms
   task->SetFillQAHistograms(kTRUE);
 
+  // most setters expect enumerations as arguments
+  // those enumerations are defined in AliAnalysisTaskAR.h
+
   // setters for track control histograms
   task->SetTrackControlHistogramBinning(kPT, 1000, 0., 6.);
   task->SetTrackControlHistogramBinning(kPHI, 360, 0., TMath::TwoPi());
@@ -49,7 +52,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackControlHistogramBinning(kDCAZ, 100, -5., 5.);
   task->SetTrackControlHistogramBinning(kDCAXY, 100, -5., 5.);
   // setters for event control histograms
-  task->SetEventControlHistogramBinning(kMUL, 2000, 0, 1600);
+  task->SetEventControlHistogramBinning(kMUL, 3000, 0, 15000);
   task->SetEventControlHistogramBinning(kMULQ, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kMULW, 300, 0, 3000);
   task->SetEventControlHistogramBinning(kMULREF, 300, 0, 3000);
@@ -60,7 +63,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetEventControlHistogramBinning(kZ, 120, -12, 12);
   task->SetEventControlHistogramBinning(kVPOS, 100, 0, 20);
   // set centrality selection criterion
-  task->SetCentralityEstimator("V0M");
+  task->SetCentralityEstimator(kV0M);
 
   // setters for track cuts
   task->SetTrackCuts(kPT, 0.2, 5.);
@@ -73,34 +76,39 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetTrackCuts(kDCAZ, -3.0, 3.0);
   task->SetTrackCuts(kDCAXY, -3.0, 3.0);
   // setters for event cuts
-  task->SetEventCuts(kMUL, 2, 1600);
+  task->SetEventCuts(kMUL, 2, 15000);
   task->SetEventCuts(kMULQ, 2, 3000);
   task->SetEventCuts(kMULW, 2, 3000);
-  task->SetEventCuts(kMULREF, 2, 3000);
+  task->SetEventCuts(kMULREF, 2, 3000); // is set to -999 for MC
   task->SetEventCuts(kNCONTRIB, 2, 3000);
-  task->SetEventCuts(kCEN, centerMin, centerMax);
+  task->SetEventCuts(kCEN, centerMin, centerMax); // is set to 99 for MC
   task->SetEventCuts(kX, -10., 10.);
   task->SetEventCuts(kY, -10., 10.);
   task->SetEventCuts(kZ, -10., 10.);
   task->SetEventCuts(kVPOS, 1e-6, 18.);
+  // correlation cuts
+  // open these up for running over MC data
+  task->SetCenCorCut(20, kDIFFABS);
+  task->SetMulCorCut(500, kDIFFABS);
+  // task->SetCenCorCut(0.2, kDIFFREL); // set above 1 for MC
+  // task->SetMulCorCut(0.2, kDIFFREL); // set above 1 for MC
   // other cuts
   task->SetFilterbit(128);
   task->SetPrimaryOnlyCut(kTRUE);
-  task->SetCenCorCut(1.1, 2);
 
   // setters for correlators we want to compute
   std::vector<std::vector<Int_t>> correlators = {{-2, 2}};
   task->SetCorrelators(correlators);
 
-  // Add your task to the analysis manager:
+  // add task to the analysis manager
   mgr->AddTask(task);
   cout << "Added to manager: " << task->GetName() << endl;
 
   // Define input/output containers:
-  OutputFile += ":" + std::getenv("OutputTDirectoryFile");
+  OutputFile += TString(":") + TString(std::getenv("OutputTDirectoryFile"));
 
   AliAnalysisDataContainer *cinput = mgr->GetCommonInputContainer();
-  AliAnalysisDataContainer *coutput = NULL;
+  AliAnalysisDataContainer *coutput = nullptr;
   coutput =
       mgr->CreateContainer(task->GetName(), TList::Class(),
                            AliAnalysisManager::kOutputContainer, OutputFile);
