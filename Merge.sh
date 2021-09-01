@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 31.08.2021
+# Last Modified Date: 01.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -13,11 +13,13 @@ source GridConfig.sh
 
 # declare variables
 MergedFile=""
-FileToMergeList="FileToMergeList.txt"
-if [ -f "Merge.C" ]; then
-    MergeMacro="$(realpath Merge.C)"
+FilesToMergeList="FilesToMergeList.txt"
+if [ -f "$GRID_UTILITY_SCRIPTS/Merge.C" ]; then
+    MergeMacro="$(realpath $GRID_UTILITY_SCRIPTS/Merge.C)"
 else
-    MergeMacro="$HOME/.local/bin/Merge.C"
+    echo "No macro found for merging..."
+    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+    exit 2
 fi
 
 echo "Merging runs in $GridOutputDirRel"
@@ -28,19 +30,22 @@ while read Run; do
     echo "Start merging run $(basename $Run) in $(dirname $Run)"
 
     # go into subdirectory
-    cd $Run
+    echo "Push into subdirectory"
+    pushd $Run
 
     # create list of files we want to merge and write the list to a file
-    find . -type f -name $GridOutputRootFile >$FileToMergeList
+    find . -type f -name $GridOutputRootFile >$FilesToMergeList
 
     # construct filename for merged file
     MergedFile="$(basename $Run)_Merged.root"
 
     # merge files
-    root -b -l -q $MergeMacro\(\"$FileToMergeList\",\"$MergedFile\"\)
+    aliroot -b -l -q $MergeMacro\(\"$FilesToMergeList\",\"$MergedFile\"\)
 
     # go back
-    cd - >/dev/null
+    echo "Pop back out"
+    popd
+
 done < <(find $GridOutputDirRel -maxdepth 1 -mindepth 1 -type d)
 
 exit 0
