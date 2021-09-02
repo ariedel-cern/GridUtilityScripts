@@ -2,7 +2,7 @@
 # File              : InitAnalysis.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 25.08.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # initalize analysis
@@ -30,6 +30,6 @@ if [ -f "GridConfig.sh" ]; then
     echo "Found existings GridConfig.sh, create backup..."
     mv GridConfig.sh GridConfig.sh.bak
 fi
-cp $GRID_UTILITY_SCRIPTS/GridConfig.sh GridConfig.sh
+cp $GRID_UTILITY_SCRIPTS/GridConfig.sh.example GridConfig.sh
 
 exit 0
