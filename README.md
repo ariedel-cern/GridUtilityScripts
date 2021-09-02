@@ -4,20 +4,17 @@ This a collection of scripts to ease the interaction with Grid during data analy
 
 ## Usage
 
-Place the scirpts in `$PATH` with the included `deploy.sh` script.
-The script assumes that `$HOME/.local/bin` is in your `$PATH`.
-The scripts source `GridConfig.sh` upon execution to set environment variables.
-Both the scirpts and macros pull those variables from the environment to configure the analysis.
-There is an example `GridConfig.sh` included which lists all necessary variables that need to be defined.
-The only files which need to be edited to configure a certain analysis after initalizing it is `GridConfig.sh` and `AddTask.C`.
+Either source `SetupEnv.sh` or set `$GRID_UTILITY_SCRIPTS`, which should point to this repo, in your `.bashrc` and add it to your `$PATH`.
+This way you can easily access all scripts and macros.
 
-## Scirpts
+## Scripts
 
-### deploy.sh
-Creating symlinks for the utility scripts into `$HOME/.local/bin` which is assumed to be in your `$PATH`.
+### SetupEnv.sh
+Export `$GRID_UTILITY_SCRIPTS`, which is the path to this repo and add it to `$PATH`.
+Only use this if you do not set these environment variables in your `.bashrc`.
 
 ### InitAnalysis.sh
-Initialize analysis in a new directory by copying over the default steering macros and the example `GridConfig.sh`. If you specify the environment variable `$GRID_UTILITY_SCRIPTS` pointing to the folder of this repository they will be copied automatically.
+Initialize analysis in a new directory by copying over the default steering macros and the example `GridConfig.sh`.
 
 ### SubmitJobs.sh
 Submit jobs to the Grid. This script can also be used as a wrapper script to run analysis locally.
@@ -32,7 +29,13 @@ Copy files from Grid to the local machine.
 Check integrity of local files copied from the Grid.
 
 ### Merge.sh
-Merged local files run by run.
+Wrapper script around the macro with the same name. Merge local files run by run.
+
+### Reterminate.sh
+Wrapper script around the macro with the same name. Reterminate local files after merging.
+
+### ComputeWeights.sh
+Wrapper script around the macro with the same name. Compute weights from merged files run by run. 
 
 ### KillAllJobs.sh
 Kill all jobs which are not in DONE state. Nice for wrapping up the analysis.
@@ -46,7 +49,7 @@ Similar to above, but just killing all jobs which in an ERROR state.
 Main steering macro. Calls all other macros to run the analysis.
 
 ### CreateAlienHandler.C
-Configure jdl files so we do not have to do it manually.
+Configure .jdl and other related files so we do not have to do it manually.
 
 ### AddTask.C
 Configure task by editing this macro.
