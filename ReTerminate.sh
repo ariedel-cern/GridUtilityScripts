@@ -23,6 +23,6 @@ fi
 echo "Reterminate merged files in $GridOutputDirRel"
 echo "Using Macro $ReTerminateMacro"
 
-find $GridOutputDirRel -type f -name "*Merged.root" | parallel "aliroot -b -l -q $ReTerminateMacro'(\"{}\")'"
+find $GridOutputDirRel -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ReTerminateMacro'(\"{}\")'"
 
 exit 0
