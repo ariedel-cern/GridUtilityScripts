@@ -16,8 +16,7 @@
 export TaskBaseName="Test"
 export OutputTDirectoryFile="OutputAnalysis"
 export Timeout="300"
-export ParallelJobs="10"
-export MaxCopyAttempts="5"
+export CopyJobs="50"
 export MaxResubmitAttempts="5"
 
 # define directories and files on grid

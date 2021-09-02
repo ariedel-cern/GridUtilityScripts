@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 27.08.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -15,181 +15,54 @@ trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
-# declare variables
-CopyAttempts=""
-RemoteFiles=""
-RemoteFile=""
-LocalFile=""
-State=""
-NumberOfRemoteFiles=""
-NumberOfCopiedFiles=""
-NumberOfBlacklistedFiles=""
-Chunk=""
-ChunkSize=""
-FileCounter=""
-
-# cleanup and aggregate results into global logfile
-Cleanup() {
-    echo "Cleanup"
-    # merge all logfiles from the different subshells
-    find $2 -name "*${3}" -exec cat {} + >>$1
-    # remove logfiles from the different subshells
-    find $2 -name "*${3}" -exec rm -rf {} \;
-    # protect against writing an entry multiple times
-    sort -u $1 -o $1
-}
-
-# create temporary directory if it does not exist already
+LocalTmpDir="${LocalTmpDir}/CopyFromGrid_$BASHPID"
 mkdir -p $LocalTmpDir
-
-# # check if there is a logfile from a previous analysis
-# if [ -f $LocalCopyLog ]; then
-#     echo "Found log file from previous run, validate it..."
-#     # if so, validate it
-#     while read RemoteFile; do
-#         LocalFile=${RemoteFile##${GridWorkingDirAbs}/}
-#         #         # check if the file exists
-#         if [ -f $LocalFile ]; then
-#             # if so, bail out
-#             continue
-#         else
-#             # if not, remove the entry
-#             echo "$LocalFile not found, remove entry..."
-#             sed -i -e "/${RemoteFile//\//\\/}/d" $GlobalLog
-#         fi
-#     done < <(awk '/COPIED/{print $1}' $GlobalLog)
-# else
-#     # if not, create an empty one
-#     touch $GlobalLog
-# fi
+FilesOnGrid="${LocalTmpDir}/FilesGrid"
+FilesOnDisk="${LocalTmpDir}/FilesDisk"
+FilesDiffGridDisk="${LocalTmpDir}/FilesDiffGridDisk"
+FilesCopy="${LocalTmpDir}/FilesCopy"
+FilesFailedCopy="${LocalTmpDir}/FilesFailedCopy"
+CopyLog="${LocalTmpDir}/CopyLog"
 
 # start endless loop
 while [ $Flag -eq 0 ]; do
 
-    # resource config file
+    # source config in every iteration
     source GridConfig.sh
-    touch $LocalCopyLog
+    # fix overwrite of environment variables
+    LocalTmpDir="${LocalTmpDir}/CopyFromGrid_$BASHPID"
 
-    echo "Job PID: ${BASHPID}"
-    LocalTmpDir="$LocalTmpDir/CopyFromGrid_${BASHPID}"
-    mkdir -p $LocalTmpDir
-    LocalCopySummaryLog="$LocalTmpDir/$LocalCopySummaryLog"
-    : >LocalCopySummaryLog
+    # search for files on grid
+    alien_find "alien://${GridWorkingDirAbs}/**/${GridOutputRootFile}" | sed -e "s|${GridWorkingDirAbs}/||" | sort >$FilesOnGrid
 
-    echo "Tail log files in $(realpath $LocalTmpDir)"
-    echo "Tail and watch $(realpath ${LocalCopySummaryLog}) for summary (no atomic write)"
+    # search for files on local disk
+    find -type f -path "./${GridOutputDirRel}/**/${GridOutputRootFile}" -printf '%P\n' | sort >$FilesOnDisk
 
-    # search for remote files on grid
-    RemoteFiles="$(alien_find "alien://${GridWorkingDirAbs}/**/${GridOutputRootFile}")"
-    [ -z RemoteFiles ] && echo "No files found on grid" && exit 1
+    # get diff between files on grid and disk
+    diff $FilesOnGrid $FilesOnDisk | awk '$1=="<" {print $2}' | sort >$FilesDiffGridDisk
 
-    # keep count of files
-    NumberOfRemoteFiles="$(wc -l <<<$RemoteFiles)"
-    NumberOfCopiedFiles="$(grep "COPIED" "$LocalCopyLog" | wc -l)"
-    NumberOfBlacklistedFiles="$(grep "BLACKLISTED" "$LocalCopyLog" | wc -l)"
+    # remove files which failed to copy and write all remainig files to a file with the format
+    # {Absolute path on grid} {relative locally}
+    # so we can pass this file to alien_cp and start N number of jobs
+    touch $FilesFailedCopy
+    diff $FilesDiffGridDisk $FilesFailedCopy | awk '$1=="<" {print $2}' | xargs -n1 -I{} echo "alien://${GridWorkingDirAbs}/{} file://./{}" >$FilesCopy
+    echo "Number of files on grid       : $(wc -l $FilesOnGrid)"
+    echo "Number of files locally       : $(wc -l $FilesOnDisk)"
+    echo "Number of files failed to copy: $(wc -l $FilesFailedCopy)"
+    echo "Number of files left to copy  : $(wc -l $FilesCopy) "
+    echo "Watch log $CopyLog"
 
-    # be more verbose
-    echo "$NumberOfCopiedFiles/$NumberOfRemoteFiles files are already copied to local machine"
-    echo "$NumberOfBlacklistedFiles/$NumberOfRemoteFiles files are blacklisted"
-    echo "$(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles))/$NumberOfRemoteFiles files are accounted for"
+    # copy files
+    alien_cp -T $CopyJobs -input $FilesCopy &>$CopyLog
 
-    # stop if all files are accounted for
-    if [ $(($NumberOfCopiedFiles + $NumberOfBlacklistedFiles)) -eq $NumberOfRemoteFiles ]; then
-        echo "No more files left to copy"
-        break
-    fi
+    # search for failed copies
+    awk '$1=="Failed" {print $3}' $CopyLog | sed -e "s|${GridWorkingDirAbs}/||" | sort >>$FilesFailedCopy
 
-    # start jobs in parallel for downloads
-    for ((i = 0; i < $ParallelJobs; i++)); do
+    echo "Copied all files in this batch. Wait for the next..."
 
-        # split number of found files into chunks
-        Chunk=$(split -n l/$((i + 1))/$ParallelJobs <<<$RemoteFiles)
-        ChunkSize=$(wc -l <<<$Chunk)
-
-        # create entry in summary log
-        echo "Process_$i 0 $ChunkSize" >>$LocalCopySummaryLog
-
-        # go into subshell
-        (
-            FileCounter=0
-            # loop over all remote files in this chunk
-            while read RemoteFile; do
-
-                # get entries from log file
-                # add protection against multiple entries
-                # it is difficult to send a shell variable which contains slashes to awk
-                State=$(grep $RemoteFile $LocalCopyLog | head -1 | awk '{print $2}')
-                CopyAttempts=$(grep "$RemoteFile" $LocalCopyLog | head -1 | awk '{print $3}')
-
-                # set default values if there was no entry
-                State=${State:=NOT_COPIED}
-                CopyAttempts=${CopyAttempts:=0}
-
-                # check if file is already copied or blacklisted
-                if [ ! $State = "BLACKLISTED" -a ! $State = "COPIED" ]; then
-                    # if not, copy it
-
-                    # construct filename for the local file such that we preserve subdirectory structure from the grid
-                    LocalFile=${RemoteFile##${GridWorkingDirAbs}/}
-
-                    # attempt to copy the file
-                    while :; do
-                        ((CopyAttempts++))
-
-                        # attempt to copy
-                        if alien_cp "alien://${RemoteFile}" "$LocalFile" &>/dev/null; then
-                            # if successful, bail out
-                            State="COPIED"
-                            break
-                        fi
-
-                        # check number of attempts, if greater then maximum
-                        if [ $CopyAttempts -ge $MaxCopyAttempts ]; then
-                            # bail out
-                            State="BLACKLISTED"
-                            break
-                        fi
-                    done
-
-                    # create log entry
-                    echo "$RemoteFile $State $CopyAttempts"
-                fi
-
-                # increase file counter
-                ((FileCounter++))
-
-                # change entry in summary
-                sed -i -e "$((i + 1)) c Process_$i $FileCounter $ChunkSize" $LocalCopySummaryLog
-
-                # split all found remote files into chunks (without spliting lines)
-            done <<<$Chunk
-
-            # redirect to process log file
-        ) >"${LocalTmpDir}/${i}_${LocalCopyProcessLog}" &
-
-        # print to screen
-        echo "Process $i of $(($ParallelJobs - 1)) is processing $ChunkSize files: PID $(echo $!)"
-
-    done
-
-    echo "Wait for downloads to finish"
-    wait
-
-    # only cleanup and pause when no interrupt signal was sent
-    if [ $Flag -eq 0 ]; then
-        Cleanup $LocalCopyLog $LocalTmpDir $LocalCopyProcessLog
-        rm $LocalCopySummaryLog
-        GridTimeout.sh $Timeout
-    fi
+    GridTimeout.sh $Timeout
 done
 
-echo "##############################################################################"
-echo "##############################################################################"
-echo "##############################################################################"
-echo "Wait for last jobs to finish"
-wait
-Cleanup $LocalCopyLog $LocalTmpDir $LocalCopyProcessLog
-rm $LocalCopySummaryLog 2>/dev/null
-rmdir $LocalTmpDir
+rm -rf $LocalTmpDir
 
 exit 0
