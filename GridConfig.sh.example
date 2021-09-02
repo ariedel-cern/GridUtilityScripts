@@ -36,9 +36,6 @@ export AnalysisMacroFileName="flowAnalysis.C"
 # define directories and files on local machine
 export LocalWorkingDir="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 export LocalTmpDir="/tmp"
-export LocalCopyLog="CopyFromGridGlobal.log"
-export LocalCopyProcessLog="CopyFromGridProcess.log"
-export LocalCopySummaryLog="CopyFromGridSummary.log"
 
 # set analysis mode
 # has to be local or grid
@@ -177,6 +174,6 @@ EOF
 # 137161
 # EOF)
 
-echo "Sourced $(basename ${BASH_SOURCE[0]}) at $(date "+%Y-%m-%d_%H:%M:%S")"
+echo "Sourced $(realpath ${BASH_SOURCE[0]}) at $(date "+%Y-%m-%d_%H:%M:%S")"
 
 return 0

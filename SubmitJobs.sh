@@ -35,11 +35,11 @@ sed -i -e "s|${GridWorkingDirAbs}/\$1,nodownload|${GridXmlCollection}/\$1,nodown
 
 echo "Copy everything we need to grid"
 {
-    alien_cp $JdlFileName alien://$GridWorkingDirAbs
-    alien_cp $AnalysisMacroFileName alien://$GridWorkingDirAbs
-    alien_cp analysis.sh alien://$GridWorkingDirAbs
-    alien_cp analysis_validation.sh alien://$GridWorkingDirAbs
-    alien_cp analysis.root alien://$GridWorkingDirAbs
+    alien_cp file://./$JdlFileName alien://$GridWorkingDirAbs
+    alien_cp file://./$AnalysisMacroFileName alien://$GridWorkingDirAbs
+    alien_cp file://./analysis.sh alien://$GridWorkingDirAbs
+    alien_cp file://./analysis_validation.sh alien://$GridWorkingDirAbs
+    alien_cp file://./analysis.root alien://$GridWorkingDirAbs
 } &>/dev/null
 
 echo "Backup generated files"
@@ -71,7 +71,7 @@ for Run in $RunNumber; do
     echo "Submit Run $Run with Task $TaskBaseName in Centrality Bins $(tr '\n' ' ' <<<$CentralityBins)"
     alien_submit $GridWorkingDirAbs/flowAnalysis.jdl "000${Run}.xml" $Run
 
-    [ $NumberActiveJobs -lt $Threshold_low ] && GridTimeout.sh 10
+    [ $NumberActiveJobs -gt $Threshold_low ] && GridTimeout.sh 10
 
 done
 

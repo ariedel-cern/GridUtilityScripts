@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 01.09.2021
+ * Last Modified Date: 02.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -21,14 +21,14 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   if (!mgr) {
     Error("AddTask.C macro", "No analysis manager to connect to.");
-    return nullptr;
+    return;
   }
 
   // Check the analysis type using the event handlers connected to the analysis
   // manager. The availability of MC handler can also be checked here.
   if (!mgr->GetInputEventHandler()) {
     Error("AddTask.C macro", "This task requires an input event handler");
-    return nullptr;
+    return;
   }
 
   // Configure your analysis task here:
