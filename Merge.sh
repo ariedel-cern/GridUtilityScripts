@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 01.09.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -22,8 +22,7 @@ else
     exit 2
 fi
 
-echo "Merging runs in $GridOutputDirRel"
-echo "Merging files $GridOutputRootFile"
+echo "Merging $GridOutputRootFile run by run in $GridOutputDirRel"
 echo "Using Macro $MergeMacro"
 
 while read Run; do

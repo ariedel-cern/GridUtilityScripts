@@ -2,7 +2,7 @@
 # File              : ComputeWeights.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.09.2021
-# Last Modified Date: 01.09.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # compute weights run by run
@@ -23,18 +23,6 @@ fi
 echo "Compute weights run by run in $GridOutputDirRel"
 echo "Using Macro $ComputeWeightsMacro"
 
-while read MergedFile; do
-    echo "Compute weights for run $(dirname $MergedFile)"
-
-    # go into subdirectory
-    pushd $(dirname $MergedFile)
-
-    # merge files
-    aliroot -b -l -q $ComputeWeightsMacro\(\"$(basename $MergedFile)\"\)
-
-    # go back
-    popd
-
-done < <(find $GridOutputDirRel -type f -name "*Merged.root")
+find $GridOutputDirRel -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeWeightsMacro'(\"{}\")'"
 
 exit 0

@@ -2,12 +2,15 @@
  * File              : ComputeWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 01.09.2021
+ * Last Modified Date: 02.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
+#include <boost/algorithm/string.hpp>
+
 Int_t ComputeWeights(const char *dataFileName) {
 
+  cout << dataFileName << endl;
   // open file holding data
   TFile *dataFile = new TFile(dataFileName, "READ");
 
@@ -15,8 +18,10 @@ Int_t ComputeWeights(const char *dataFileName) {
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
       dataFile->Get(std::getenv("OutputTDirectoryFile")));
 
-  // open new file holding phi weights
-  TFile *weightFile = new TFile("Weights.root", "RECREATE");
+  // open new file holding weights
+  std::string weightFileName(dataFileName);
+  boost::replace_all(weightFileName, "Merged", "Weights");
+  TFile *weightFile = new TFile(weightFileName.c_str(), "RECREATE");
 
   // initalize objects
   TList *TaskList, *ControlHistogramsList, *TrackControlHistogramsList;
