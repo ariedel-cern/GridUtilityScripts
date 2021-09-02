@@ -41,7 +41,7 @@ Wrapper script around the macro with the same name. Compute weights from merged 
 Kill all jobs which are not in DONE state. Nice for wrapping up the analysis.
 
 ### KillAllFailedJobs.sh
-Similar to above, but just killing all jobs which in an ERROR state.
+Similar to above, but just killing jobs which are in an ERROR state.
 
 ## Steering macros
 
