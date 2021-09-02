@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 01.09.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -21,12 +21,13 @@ fi
 
 echo "running on Grid"
 
-# protect against overwriting existing runs
-echo "Create working directory $GridWorkingDirAbs"
-alien_mkdir $GridWorkingDirAbs
-# alien_rm $GridWorkingDirAbs/*
+# protect against overwriting existing analysis results
+if alien_find "${GridWorkingDirAbs}/*" &>/dev/null; then
+    echo "Working directory not empty. Creating backup..."
+    alien_mv ${GridWorkingDirAbs} ${GridWorkingDirAbs}.bak
+fi
 
-# will run with grind mode offline to generate all necessary files
+# will run with grid mode offline to generate all necessary files
 echo "Run steering macros in offline mode to generate necessary files"
 aliroot -q -l -b run.C &>/dev/null
 echo "Modify jdl to use XML collections in $GridXmlCollection"
@@ -41,7 +42,7 @@ echo "Copy everything we need to grid"
     alien_cp analysis.root alien://$GridWorkingDirAbs
 } &>/dev/null
 
-echo "Backup files"
+echo "Backup generated files"
 BackupDir="Offline"
 mkdir -p $BackupDir
 mv $JdlFileName $BackupDir
@@ -61,8 +62,8 @@ for Run in $RunNumber; do
     echo "Checking quota"
     echo "$NumberActiveJobs/$Limit are running"
 
-    while [ $NumberActiveJobs -gt $Threshold ]; do
-        echo "Exeeded threshold, wait for things to calm down..."
+    while [ $NumberActiveJobs -gt $Threshold_high ]; do
+        echo "Exeeded threshold of $NumberActiveJobs jobs, wait for things to calm down..."
         GridTimeout.sh $Timeout
     done
 

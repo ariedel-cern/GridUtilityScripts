@@ -10,7 +10,7 @@
 # path to grid utility scripts which is ideally set in your bashrc or by sourcing SetupEnv.sh
 # if not, set it to the default value and hope for the best
 [ -z $GRID_UTILITY_SCRIPTS ] && export GRID_UTILITY_SCRIPTS="${HOME}/GridUtilityScripts"
-[ ! -f $GRID_UTILITY_SCRIPTS ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 2
+[ ! -d $GRID_UTILITY_SCRIPTS ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
 
 # miscellaneous variables
 export TaskBaseName="Test"
@@ -30,6 +30,7 @@ export GridOutputDirAbs="${GridWorkingDirAbs}/${GridOutputDirRel}"
 export GridOutputRootFile="AnalysisResults.root"
 # path to own xml collection so we do not read to recreate them every time
 export GridXmlCollection="${GridHomeDir}/XMLcollections/LHC10h/pass2/AOD/AOD160"
+# anlysis jdl file and analysis macro
 export JdlFileName="flowAnalysis.jdl"
 export AnalysisMacroFileName="flowAnalysis.C"
 
