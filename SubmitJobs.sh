@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 03.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -53,7 +53,7 @@ mv analysis.root $BackupDir
 
 Limit="1500"
 Threshold_high="1350"
-Threshold_low="300"
+Threshold_low="100"
 
 # submit jobs run by run
 for Run in $RunNumber; do
@@ -71,7 +71,10 @@ for Run in $RunNumber; do
     echo "Submit Run $Run with Task $TaskBaseName in Centrality Bins $(tr '\n' ' ' <<<$CentralityBins)"
     alien_submit $GridWorkingDirAbs/flowAnalysis.jdl "000${Run}.xml" $Run
 
-    [ $NumberActiveJobs -gt $Threshold_low ] && GridTimeout.sh 10
+    if [ $NumberActiveJobs -gt $Threshold_low ]; then
+        echo "Wait for Grid to catch up..."
+        GridTimeout.sh 15
+    fi
 
 done
 

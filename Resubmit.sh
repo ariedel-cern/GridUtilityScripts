@@ -2,7 +2,7 @@
 # File              : Resubmit.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 03.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # search for jobs on grid that failed and resubmit them
@@ -25,6 +25,8 @@ Resubmit() {
     if [ $NumberOfFailures -gt $MaxResubmitAttempts ]; then
         alien.py kill $1
     else
+        # cleanup output directory before resubmitting
+        alien_rm -rf $(alien_ps -jdl $1 | awk '$1=="OutputDir" {gsub(";","",$3);gsub("\"","",$3);print $3}') &>/dev/null
         alien.py resubmit $1
     fi
 
