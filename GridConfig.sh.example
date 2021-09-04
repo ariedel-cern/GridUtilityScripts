@@ -2,7 +2,7 @@
 # File              : GridConfig.sh.example
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 05.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -13,18 +13,25 @@
 [ ! -d $GRID_UTILITY_SCRIPTS ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
 
 # miscellaneous variables
-export TaskBaseName="Test"
-export OutputTDirectoryFile="OutputAnalysis"
 export Timeout="300"
-export CopyJobs="50"
+export CopyJobs="80"
 export MaxResubmitAttempts="5"
+
+# configure task
+export TaskBaseName="Test"
+export AnalysisName="Test0"
+export AliPhysicsTag="vAN-20210904_ROOT6-1"
+export OutputTDirectoryFile="OutputAnalysis"
+export InputFilesPerSubjob="50"
+export RunsPerMasterjob="1"
+export MasterResubmitThreshold="50"
+export TimeToLive="44000"
 
 # define directories and files on grid
 export GridHomeDir="/alice/cern.ch/user/a/ariedel"
-export GridWorkingDirRel="20210825_LHC10h_Test0"
+export GridWorkingDirRel="${AliPhysicsTag}_${AnalysisName}"
 export GridWorkingDirAbs="${GridHomeDir}/${GridWorkingDirRel}"
-# relative to working directory on grid
-export GridOutputDirRel="output"
+export GridOutputDirRel="output" # relative to working directory on grid
 export GridOutputDirAbs="${GridWorkingDirAbs}/${GridOutputDirRel}"
 export GridOutputRootFile="AnalysisResults.root"
 # path to own xml collection so we do not read to recreate them every time
@@ -45,12 +52,6 @@ export AnalysisMode="local"
 # has to be test, offline, submit, full or terminate
 # for submission, set runmode to offline
 export GridRunMode="offline"
-# set analysis tag
-export AliPhysicsTag="vAN-20210825_ROOT6-1"
-export InputFilesPerSubjob="50"
-export RunsPerMasterjob="1"
-export MasterResubmitThreshold="50"
-export TimeToLive="44000"
 
 # when running over real data, set to 1
 # when running over monte carlo data, set to 0
