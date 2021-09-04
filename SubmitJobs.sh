@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 03.09.2021
+# Last Modified Date: 05.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -63,8 +63,10 @@ for Run in $RunNumber; do
     echo "$NumberActiveJobs/$Limit are running"
 
     while [ $NumberActiveJobs -gt $Threshold_high ]; do
-        echo "Exeeded threshold of $NumberActiveJobs jobs, wait for things to calm down..."
+        echo "Exeeded threshold of $Threshold_high jobs, wait for things to calm down..."
         GridTimeout.sh $Timeout
+        NumberActiveJobs=$(alien_ps -X | wc -l)
+        echo "$NumberActiveJobs/$Limit are running"
     done
 
     echo "We are good to go!"
