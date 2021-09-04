@@ -143,8 +143,9 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetEventControlHistogramBinning(kZ, z_bins, z_min, z_max);
   task->SetEventControlHistogramBinning(kVPOS, pos_bins, pos_min, pos_max);
 
-  // setter for correlation cuts on centrality
   task->SetFillQAHistograms(kTRUE);
+
+  // setter for correlation cuts on centrality
   for (int i = 0; i < LAST_ECENESTIMATORS; i++) {
     for (int j = i + 1; j < LAST_ECENESTIMATORS; j++) {
       task->SetCenCorQAHistogramBinning(
