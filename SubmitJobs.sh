@@ -11,6 +11,9 @@
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
+# exit if there is an unset variable
+set -u
+
 # if running locally, call aliroot and run.C macro with default values and bail out
 if [ $ANALYSISMODE = "local" ]; then
     echo "Running locally over $DataDir"
