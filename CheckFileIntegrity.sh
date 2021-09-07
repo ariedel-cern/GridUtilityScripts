@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -35,10 +35,10 @@ Check_Integrity() {
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
-echo "Checking .root files in $GridOutputDirRel"
+echo "Checking .root files in $GRIDOUTPUTDIRREL"
 
 #since we want to run a shell function, we have to export it
 export -f Check_Integrity
-find $GridOutputDirRel -type f -name "*.root" | parallel --progress --bar Check_Integrity {}
+find $GRIDOUTPUTDIRREL -type f -name "*.root" | parallel --progress --bar Check_Integrity {}
 
 exit 0

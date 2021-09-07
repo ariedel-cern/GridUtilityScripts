@@ -2,7 +2,7 @@
  * File              : run.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 26.08.2021
+ * Last Modified Date: 06.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -44,16 +44,16 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
   // l) Print real and CPU time used for analysis.
 
   // get configuration from the environemnt
-  const char *analysisMode = std::getenv("AnalysisMode");
+  const char *analysisMode = std::getenv("ANALYSISMODE");
   const char *dataDir = std::getenv("DataDir");
   Bool_t bRunOverData = kTRUE;
-  if (std::stoi(std::getenv("RunOverData")) == 1) {
+  if (std::stoi(std::getenv("RUNOVERDATA")) == 1) {
     bRunOverData = kTRUE;
   } else {
     bRunOverData = kFALSE;
   }
   Bool_t bRunOverAOD = kTRUE;
-  if (std::stoi(std::getenv("RunOverAOD")) == 1) {
+  if (std::stoi(std::getenv("RUNOVERAOD")) == 1) {
     bRunOverAOD = kTRUE;
   } else {
     bRunOverAOD = kFALSE;
@@ -66,7 +66,7 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
   // Float_t centralityArray[numberOfCentralityBins + 1] = {
   //     0.0, 100.0}; // in centrality percentile
   std::vector<Int_t> CentralityBins;
-  std::stringstream StreamCenBins(std::getenv("CentralityBins"));
+  std::stringstream StreamCenBins(std::getenv("CENTRALITYBINEDGES"));
   std::string edge;
   while (StreamCenBins >> edge) {
     CentralityBins.push_back(std::stoi(edge));

@@ -2,7 +2,7 @@
  * File              : AddTask.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 05.09.2021
+ * Last Modified Date: 06.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -14,7 +14,7 @@
 
 void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
              Bool_t bRunOverAOD = kTRUE) {
-  TString OutputFile(std::getenv("GridOutputRootFile"));
+  TString OutputFile(std::getenv("GRIDOUTPUTROOTFILE"));
 
   // Get the pointer to the existing analysis manager via the static access
   // method.
@@ -33,7 +33,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
 
   // Configure your analysis task here:
   AliAnalysisTaskAR *task = new AliAnalysisTaskAR(
-      Form("%s_%.1f-%.1f", std::getenv("TaskBaseName"), centerMin, centerMax),
+      Form("%s_%.1f-%.1f", std::getenv("TASKBASENAME"), centerMin, centerMax),
       kFALSE);
 
   // set limits for control histograms and cuts
@@ -196,8 +196,8 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetEventCuts(kVPOS, pos_min, pos_max);
   // correlation cuts
   // open these up for running over MC data
-  task->SetCenCorCut(1.2, 10);  // slope, offset
-  task->SetMulCorCut(1.4, 300); // slope, offset
+  task->SetCenCorCut(1.0, 10);  // slope, offset
+  task->SetMulCorCut(1.3, 300); // slope, offset
   // other cuts
   task->SetFilterbit(128); // typical 1,128,256,768
   task->SetPrimaryOnlyCut(kTRUE);
@@ -212,7 +212,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   cout << "Added to manager: " << task->GetName() << endl;
 
   // Define input/output containers:
-  OutputFile += TString(":") + TString(std::getenv("OutputTDirectoryFile"));
+  OutputFile += TString(":") + TString(std::getenv("OUTPUTTDIRECTORYFILE"));
 
   AliAnalysisDataContainer *cinput = mgr->GetCommonInputContainer();
   AliAnalysisDataContainer *coutput = nullptr;

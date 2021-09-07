@@ -2,7 +2,7 @@
 # File              : GridConfig.sh.example
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 05.09.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -13,76 +13,92 @@
 [ ! -d $GRID_UTILITY_SCRIPTS ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
 
 # miscellaneous variables
-export Timeout="300"
-export CopyJobs="80"
-export MaxResubmitAttempts="5"
+export TIMEOUT="300"
+export COPYJOBS="80"
+export MAXRESUBMIT="3"
 
 # configure task
-export TaskBaseName="Test"
-export AnalysisName="Test0"
-export AliPhysicsTag="vAN-20210904_ROOT6-1"
-export OutputTDirectoryFile="OutputAnalysis"
-export InputFilesPerSubjob="50"
-export RunsPerMasterjob="1"
-export MasterResubmitThreshold="50"
-export TimeToLive="44000"
+export TASKBASENAME="Test"
+export ANALYSISNAME="Test0"
+export ALIPHYSICSTAG="vAN-20210904_ROOT6-1"
+export OUTPUTTDIRECTORYFILE="OutputAnalysis"
+export INPUTFILESPERSUBJOB="50"
+export RUNSPERMASTERJOB="1"
+export MASTERRESUBMITTHRESHOLD="50"
+export TIMETOLIVE="44000"
 
 # define directories and files on grid
-export GridHomeDir="/alice/cern.ch/user/a/ariedel"
-export GridWorkingDirRel="${AliPhysicsTag}_${AnalysisName}"
-export GridWorkingDirAbs="${GridHomeDir}/${GridWorkingDirRel}"
-export GridOutputDirRel="output" # relative to working directory on grid
-export GridOutputDirAbs="${GridWorkingDirAbs}/${GridOutputDirRel}"
-export GridOutputRootFile="AnalysisResults.root"
+export GRIDHOMEDIR="/alice/cern.ch/user/a/ariedel"
+export GRIDWORKINGDIRREL="${ALIPHYSICSTAG}_${ANALYSISNAME}"
+export GRIDWORKINGDIRABS="${GRIDHOMEDIR}/${GRIDWORKINGDIRREL}"
+export GRIDOUTPUTDIRREL="output" # relative to working directory on grid
+export GRIDOUTPUTDIRABS="${GRIDWORKINGDIRABS}/${GRIDOUTPUTDIRREL}"
+export GRIDOUTPUTROOTFILE="AnalysisResults.root"
 # path to own xml collection so we do not read to recreate them every time
-export GridXmlCollection="${GridHomeDir}/XMLcollections/LHC10h/pass2/AOD/AOD160"
+export GRIDXMLCOLLECTION="${GRIDHOMEDIR}/XMLcollections/LHC10h/pass2/AOD/AOD160"
 # anlysis jdl file and analysis macro
-export JdlFileName="flowAnalysis.jdl"
-export AnalysisMacroFileName="flowAnalysis.C"
+export JDLFILENAME="flowAnalysis.jdl"
+export ANALYSISMACROFILENAME="flowAnalysis.C"
 
 # define directories and files on local machine
-export LocalWorkingDir="$(realpath $(dirname ${BASH_SOURCE[0]}))"
-export LocalTmpDir="/tmp"
+export LOCALWORKINGDIR="$(realpath $(dirname ${BASH_SOURCE[0]}))"
+export LOCALTMPDIR="/tmp"
 
 # set analysis mode
 # has to be local or grid
-export AnalysisMode="local"
+export ANALYSISMODE="local"
 
 # when runnnig on grid
 # has to be test, offline, submit, full or terminate
 # for submission, set runmode to offline
-export GridRunMode="offline"
+export GRIDRUNMODE="offline"
 
 # when running over real data, set to 1
 # when running over monte carlo data, set to 0
-export RunOverData="1"
-# export RunOverData="0"
+export RUNOVERDATA="1"
+# export RUNOVERDATA="0"
 # when running over AOD, set to 1
 # when running over ESD, set to 0
-export RunOverAOD="1"
-# export RunOverAOD="0"
+export RUNOVERAOD="1"
+# export RUNOVERAOD="0"
 
-[ $RunOverAOD -ne 1 ] && echo "Run over ESD not supported yet" && return 1
+[ $RUNOVERAOD -ne 1 ] && echo "Run over ESD not supported yet" && return 1
 
 # when running locally specify data directory
-[ $RunOverData -eq 1 -a $RunOverAOD -eq 1 ] && export DataDir="/home/vagrant/data/2010/LHC10h/000137161/ESDs/pass2/AOD160"
-[ $RunOverData -eq 0 -a $RunOverAOD -eq 1 ] && export DataDir="/home/vagrant/sim/LHC10d4/120822/AOD056"
+[ $RUNOVERDATA -eq 1 -a $RUNOVERAOD -eq 1 ] && export DataDir="/home/vagrant/data/2010/LHC10h/000137161/ESDs/pass2/AOD160"
+[ $RUNOVERDATA -eq 0 -a $RUNOVERAOD -eq 1 ] && export DataDir="/home/vagrant/sim/LHC10d4/120822/AOD056"
 
 # configure centrality bins
-export CentralityBins=$(
+export CENTRALITYBINEDGES=$(
     cat <<'EOF'
 0
 80
 EOF
 )
 
+# export CENTRALITYBINEDGES=$(
+#     cat <<'EOF'
+# 0
+# 5
+# 10
+# 20
+# 30
+# 40
+# 50
+# 60
+# 70
+# 80
+# EOF
+# )
+
 # configure run numbers
-export RunNumber=$(
+export RUNNUMBER=$(
     cat <<'EOF'
 137161
 EOF
 )
-# export RunNumber=$(cat <<'EOF'
+# export RUNNUMBER=$(
+#cat <<'EOF'
 # 139510
 # 139507
 # 139505
@@ -173,7 +189,8 @@ EOF
 # 137230
 # 137162
 # 137161
-# EOF)
+# EOF
+#)
 
 echo "Sourced $(realpath ${BASH_SOURCE[0]}) at $(date "+%Y-%m-%d_%H:%M:%S")"
 

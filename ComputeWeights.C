@@ -2,7 +2,7 @@
  * File              : ComputeWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 02.09.2021
+ * Last Modified Date: 06.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -16,7 +16,7 @@ Int_t ComputeWeights(const char *dataFileName) {
 
   // open output directory
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-      dataFile->Get(std::getenv("OutputTDirectoryFile")));
+      dataFile->Get(std::getenv("OUTPUTTDIRECTORYFILE")));
 
   // open new file holding weights
   std::string weightFileName(dataFileName);

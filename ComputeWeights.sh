@@ -2,7 +2,7 @@
 # File              : ComputeWeights.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.09.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # compute weights run by run
@@ -20,9 +20,9 @@ else
     exit 2
 fi
 
-echo "Compute weights run by run in $GridOutputDirRel"
+echo "Compute weights run by run in $GRIDOUTPUTDIRREL"
 echo "Using Macro $ComputeWeightsMacro"
 
-find $GridOutputDirRel -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeWeightsMacro'(\"{}\")'"
+find $GRIDOUTPUTDIRREL -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeWeightsMacro'(\"{}\")'"
 
 exit 0
