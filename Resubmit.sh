@@ -2,7 +2,7 @@
 # File              : Resubmit.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 07.09.2021
+# Last Modified Date: 08.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # search for jobs on grid that failed and resubmit them
@@ -10,10 +10,6 @@
 # source config file
 [ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
-
-# signal handling for gracefully stoping endless loop
-Flag=0
-trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 
 Resubmit() {
     # resubmit jobs in error state or kill them if they reached the threshold
@@ -35,8 +31,5 @@ Resubmit() {
 export -f Resubmit
 
 alien_ps -E | awk '{print $2}' | parallel --bar --progress Resubmit {}
-
-echo "Done with resubmitting this batch. Wait for more..."
-GridTimeout.sh $TIMEOUT
 
 exit 0

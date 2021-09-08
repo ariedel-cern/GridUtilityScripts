@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 07.09.2021
+# Last Modified Date: 08.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -38,15 +38,6 @@ echo "Modify jdl to use XML collections in $GRIDXMLCOLLECTION"
 # add support for specifing weights run by run
 sed -i -e "s|${GRIDWORKINGDIRABS}/\$1,nodownload|${GRIDXMLCOLLECTION}/\$1,nodownload|" $JDLFILENAME
 
-echo "Copy everything we need to grid"
-{
-    alien_cp file://./$JDLFILENAME alien://$GRIDWORKINGDIRABS
-    alien_cp file://./$ANALYSISMACROFILENAME alien://$GRIDWORKINGDIRABS
-    alien_cp file://./analysis.sh alien://$GRIDWORKINGDIRABS
-    alien_cp file://./analysis_validation.sh alien://$GRIDWORKINGDIRABS
-    alien_cp file://./analysis.root alien://$GRIDWORKINGDIRABS
-} &>/dev/null
-
 echo "Backup generated files"
 BackupDir="Offline"
 mkdir -p $BackupDir
@@ -56,10 +47,16 @@ mv analysis.sh $BackupDir
 mv analysis_validation.sh $BackupDir
 mv analysis.root $BackupDir
 
+echo "Copy everything we need to grid"
+alien_cp "$BackupDir/" "alien://$GRIDWORKINGDIRABS/"
+
+
+#TODO move these variables to gridconfig
 # thresholds and limits
 Limit_RunningSubjobs="1500"
 Threshold_RunningSubjobs="1200"
 Threshold_WaitingSubjobs="50"
+Threshold_InErrorSubjobs="50"
 Limit_RunningTime="100"
 Threshold_RunningTime="90"
 Limit_CPUCost="100"
@@ -82,7 +79,7 @@ GetQuota() {
     WaitingSubjobs=$(alien_ps -W | wc -l)
     RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$8);print int($8)}')
     CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$6);print int($6)}')
-    MasterjobsNotReady=$(alien_ps -M | awk '$4=="S" || $4=="I" {print $2}' | wc -l)
+    MasterjobsNotReady=$(alien_ps -M -W | wc -l)
     MasterjobsInError=$(alien_ps -M -E | wc -l)
     return 0
 }
@@ -91,7 +88,6 @@ GetQuota() {
 for Run in $RUNNUMBER; do
 
     #TODO
-    #check for masterjobs in errors split or inserting
     #keep log of submitted jobs
     #keep counter Submitted/Total Number of runs
 
