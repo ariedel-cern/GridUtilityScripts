@@ -1,14 +1,14 @@
 /**
- * File              : ComputeWeights.C
+ * File              : ComputeKinematicWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 06.09.2021
+ * Last Modified Date: 10.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
 #include <boost/algorithm/string.hpp>
 
-Int_t ComputeWeights(const char *dataFileName) {
+Int_t ComputeKinematicWeights(const char *dataFileName) {
 
   cout << dataFileName << endl;
   // open file holding data
@@ -20,7 +20,7 @@ Int_t ComputeWeights(const char *dataFileName) {
 
   // open new file holding weights
   std::string weightFileName(dataFileName);
-  boost::replace_all(weightFileName, "Merged", "Weights");
+  boost::replace_all(weightFileName, "Merged", "KinematicWeights");
   TFile *weightFile = new TFile(weightFileName.c_str(), "RECREATE");
 
   // initalize objects
