@@ -7,10 +7,9 @@
 
 # example configuration for running a analysis on grid
 
-# path to grid utility scripts which is ideally set in your bashrc or by sourcing SetupEnv.sh
+# check path to grid utility scripts which is ideally set in your bashrc or by sourcing SetupEnv.sh
 # if not, set it to the default value and hope for the best
-[ -z $GRID_UTILITY_SCRIPTS ] && export GRID_UTILITY_SCRIPTS="${HOME}/GridUtilityScripts"
-[ ! -d $GRID_UTILITY_SCRIPTS ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
+[ ! -d ${GRID_UTILITY_SCRIPTS:=$HOME/GridUtilityScripts} ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
 
 # miscellaneous variables
 export TIMEOUT="300"
@@ -36,7 +35,7 @@ export GRID_OUTPUT_DIR_ABS="${GRID_WORKING_DIR_ABS}/${GRID_OUTPUT_DIR_REL}"
 export GRID_OUTPUT_ROOT_FILE="AnalysisResults.root"
 # path to own xml collection so we do not read to recreate them every time
 export GRID_XML_COLLECTION="${GRID_HOME_DIR}/XMLcollections/LHC10h/pass2/AOD/AOD160"
-# anlysis jdl file and analysis macro
+# analysis jdl file and analysis macro
 export JDL_FILE_NAME="flowAnalysis.jdl"
 export ANALYSIS_MACRO_FILE_NAME="flowAnalysis.C"
 
