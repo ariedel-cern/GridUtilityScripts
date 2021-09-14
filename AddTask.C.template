@@ -1,5 +1,5 @@
 /**
- * File              : AddTask.C
+ * File              : AddTask.C.template
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
  * Last Modified Date: 14.09.2021
@@ -31,11 +31,6 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
     Error("AddTask.C macro", "This task requires an input event handler");
     return;
   }
-
-  // Configure your analysis task here:
-  AliAnalysisTaskAR *task = new AliAnalysisTaskAR(
-      Form("%s_%.1f-%.1f", std::getenv("TASK_BASENAME"), centerMin, centerMax),
-      kFALSE);
 
   // set limits for control histograms and cuts
   // transverse momentum
@@ -116,6 +111,11 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   Double_t pos_min = 1e-6;
   Double_t pos_max = 18.;
   Int_t pos_bins = (pos_max - pos_min) * 100.;
+
+  // configure first task here
+  AliAnalysisTaskAR *task = new AliAnalysisTaskAR(
+      Form("%s_%.1f-%.1f", std::getenv("TASK_BASENAME"), cen_min, cen_max),
+      kFALSE);
 
   // most setters expect enumerations as arguments
   // those enumerations are defined in AliAnalysisTaskAR.h
@@ -198,7 +198,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetEventCuts(kVPOS, pos_min, pos_max);
   // correlation cuts
   task->SetCenCorCut(1.0, 10);  // slope, offset
-  task->SetMulCorCut(1.3, 300); // slope, offset
+  task->SetMulCorCut(1.4, 300); // slope, offset
   // other cuts
   task->SetFilterbit(128); // typical 1,92,128,256,768
   task->SetPrimaryOnlyCut(kTRUE);
@@ -222,6 +222,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   // task->SetWeightHistogram(kPHI,"output/weights.root","PHIweights");
   // task->SetWeightHistogram(kETA,"output/weights.root","ETAweights");
 
+  // configure more task, i.e. through cloning
   // AliAnalysisTaskAR *Newtask =
   //     dynamic_cast<AliAnalysisTaskAR *>(task->Clone("NewTask"));
   // Ntask->SetCentralityEstimator(kSPDTRACKLETS);
