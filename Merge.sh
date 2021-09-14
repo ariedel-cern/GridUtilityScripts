@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 06.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -22,7 +22,7 @@ else
     exit 2
 fi
 
-echo "Merging $GRIDOUTPUTROOTFILE run by run in $GRIDOUTPUTDIRREL"
+echo "Merging $GRID_OUTPUT_ROOT_FILE run by run in $GRID_OUTPUT_DIR_REL"
 echo "Using Macro $MergeMacro"
 
 while read Run; do
@@ -32,7 +32,7 @@ while read Run; do
     pushd $Run
 
     # create list of files we want to merge and write the list to a file
-    find . -type f -name $GRIDOUTPUTROOTFILE >$FilesToMergeList
+    find . -type f -name $GRID_OUTPUT_ROOT_FILE >$FilesToMergeList
 
     # construct filename for merged file
     MergedFile="$(basename $Run)_Merged.root"
@@ -43,6 +43,6 @@ while read Run; do
     # go back
     popd
 
-done < <(find $GRIDOUTPUTDIRREL -maxdepth 1 -mindepth 1 -type d)
+done < <(find $GRID_OUTPUT_DIR_REL -maxdepth 1 -mindepth 1 -type d)
 
 exit 0

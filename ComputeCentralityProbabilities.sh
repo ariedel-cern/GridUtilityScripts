@@ -2,7 +2,7 @@
 # File              : ComputeCentralityProbabilities.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 10.09.2021
-# Last Modified Date: 10.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # compute centrality probabilities run by run
@@ -20,9 +20,9 @@ else
     exit 2
 fi
 
-echo "Compute probabilities run by run in $GRIDOUTPUTDIRREL"
+echo "Compute probabilities run by run in $GRID_OUTPUT_DIR_REL"
 echo "Using Macro $ComputeProbabilitiesMacro"
 
-find $GRIDOUTPUTDIRREL -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeProbabilitiesMacro'(\"{}\")'"
+find $GRID_OUTPUT_DIR_REL -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeProbabilitiesMacro'(\"{}\")'"
 
 exit 0

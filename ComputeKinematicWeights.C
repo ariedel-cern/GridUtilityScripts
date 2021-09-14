@@ -2,7 +2,7 @@
  * File              : ComputeKinematicWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 10.09.2021
+ * Last Modified Date: 14.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -16,7 +16,7 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
 
   // open output directory
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-      dataFile->Get(std::getenv("OUTPUTTDIRECTORYFILE")));
+      dataFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
 
   // open new file holding weights
   std::string weightFileName(dataFileName);

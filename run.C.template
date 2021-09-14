@@ -44,16 +44,16 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
   // l) Print real and CPU time used for analysis.
 
   // get configuration from the environemnt
-  const char *analysisMode = std::getenv("ANALYSISMODE");
+  const char *analysisMode = std::getenv("ANALYSIS_MODE");
   const char *dataDir = std::getenv("DataDir");
   Bool_t bRunOverData = kTRUE;
-  if (std::stoi(std::getenv("RUNOVERDATA")) == 1) {
+  if (std::stoi(std::getenv("RUN_OVER_DATA")) == 1) {
     bRunOverData = kTRUE;
   } else {
     bRunOverData = kFALSE;
   }
   Bool_t bRunOverAOD = kTRUE;
-  if (std::stoi(std::getenv("RUNOVERAOD")) == 1) {
+  if (std::stoi(std::getenv("RUN_OVER_AOD")) == 1) {
     bRunOverAOD = kTRUE;
   } else {
     bRunOverAOD = kFALSE;
@@ -66,7 +66,7 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
   // Float_t centralityArray[numberOfCentralityBins + 1] = {
   //     0.0, 100.0}; // in centrality percentile
   std::vector<Int_t> CentralityBins;
-  std::stringstream StreamCenBins(std::getenv("CENTRALITYBINEDGES"));
+  std::stringstream StreamCenBins(std::getenv("CENTRALITY_BIN_EDGES"));
   std::string edge;
   while (StreamCenBins >> edge) {
     CentralityBins.push_back(std::stoi(edge));

@@ -2,7 +2,7 @@
 # File              : Resubmit.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 08.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # search for jobs on grid that failed and resubmit them
@@ -18,7 +18,7 @@ Resubmit() {
     # count how often the job finished in some error state
     local NumberOfFailures=$(alien_ps -trace $1 | grep "The job finished on the worker node with status ERROR_" | wc -l)
 
-    if [ $NumberOfFailures -gt $MAXRESUBMIT ]; then
+    if [ $NumberOfFailures -gt $MAX_RESUBMIT ]; then
         alien.py kill $1
     else
         # cleanup output directory before resubmitting

@@ -2,7 +2,7 @@
 # File              : ComputeKinematicWeights.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.09.2021
-# Last Modified Date: 10.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # compute kinematic weights run by run
@@ -20,9 +20,9 @@ else
     exit 2
 fi
 
-echo "Compute weights run by run in $GRIDOUTPUTDIRREL"
+echo "Compute weights run by run in $GRID_OUTPUT_DIR_REL"
 echo "Using Macro $ComputeWeightsMacro"
 
-find $GRIDOUTPUTDIRREL -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeWeightsMacro'(\"{}\")'"
+find $GRID_OUTPUT_DIR_REL -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $ComputeWeightsMacro'(\"{}\")'"
 
 exit 0

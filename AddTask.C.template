@@ -15,7 +15,7 @@
 void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
              Bool_t bRunOverAOD = kTRUE) {
 
-  TString OutputFile(std::getenv("GRIDOUTPUTROOTFILE"));
+  TString OutputFile(std::getenv("GRID_OUTPUT_ROOT_FILE"));
 
   // Get the pointer to the existing analysis manager
   // via the static access method.
@@ -34,7 +34,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
 
   // Configure your analysis task here:
   AliAnalysisTaskAR *task = new AliAnalysisTaskAR(
-      Form("%s_%.1f-%.1f", std::getenv("TASKBASENAME"), centerMin, centerMax),
+      Form("%s_%.1f-%.1f", std::getenv("TASK_BASENAME"), centerMin, centerMax),
       kFALSE);
 
   // set limits for control histograms and cuts
@@ -152,14 +152,14 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   task->SetFillQAHistograms(kFALSE);
   task->SetFillQACorHistogramsOnly(kTRUE);
 
-  // setter for correlation cuts on centrality
+  // setter for centrality correlation histograms
   for (int i = 0; i < LAST_ECENESTIMATORS; i++) {
     for (int j = i + 1; j < LAST_ECENESTIMATORS; j++) {
       task->SetCenCorQAHistogramBinning(i, cen_bins, cen_min, cen_max, j,
                                         cen_bins, cen_min, cen_max);
     }
   }
-  // setter for correlation cuts on multiplicity
+  // setter for multiplicity correlation histograms
   Double_t MulCorMM[kMulEstimators][2] = {
       {mul_min, mul_max},           {mulq_min, mulq_max},
       {mulw_min, mulw_max},         {mulref_min, mulref_max},
@@ -230,7 +230,7 @@ void AddTask(Float_t centerMin = 0., Float_t centerMax = 100.,
   std::vector<AliAnalysisTaskAR *> tasks = {task};
 
   // Define input/output containers:
-  OutputFile += TString(":") + TString(std::getenv("OUTPUTTDIRECTORYFILE"));
+  OutputFile += TString(":") + TString(std::getenv("OUTPUT_TDIRECTORY_FILE"));
   AliAnalysisDataContainer *cinput = nullptr;
   AliAnalysisDataContainer *coutput = nullptr;
 

@@ -12,16 +12,16 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // then source /tmp/gclient_env_$UID in the current shell.
   AliAnalysisAlien *plugin = new AliAnalysisAlien();
 
-  plugin->SetRunMode(std::getenv("GRIDRUNMODE"));
+  plugin->SetRunMode(std::getenv("GRID_RUN_MODE"));
   plugin->SetNtestFiles(2); // Relevant only for run mode "test". By default
   // 10 files will be copied locally and analysed in "test" mode
 
   // Set versions of used packages
   plugin->SetAPIVersion("V1.1x");
-  plugin->SetAliPhysicsVersion(std::getenv("ALIPHYSICSTAG"));
+  plugin->SetAliPhysicsVersion(std::getenv("ALIPHYSICS_TAG"));
 
   Bool_t bRunOverData;
-  if (std::stoi(std::getenv("RUNOVERDATA")) == 1) {
+  if (std::stoi(std::getenv("RUN_OVER_DATA")) == 1) {
     bRunOverData = kTRUE;
   } else {
     bRunOverData = kFALSE;
@@ -96,10 +96,10 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   plugin->SetCheckCopy(kFALSE);
   // Define alien work directory where all files will be copied. Relative to
   // alien $HOME.
-  plugin->SetGridWorkingDir(std::getenv("GRIDWORKINGDIRREL"));
+  plugin->SetGridWorkingDir(std::getenv("GRID_WORKING_DIR_REL"));
   // Declare alien output directory. Relative to working directory.
   plugin->SetGridOutputDir(std::getenv(
-      "GRIDOUTPUTDIRREL")); // In this case will be $HOME/work/output
+      "GRID_OUTPUT_DIR_REL")); // In this case will be $HOME/work/output
   // Declare the analysis source files names separated by blancs. To be compiled
   // runtime using ACLiC on the worker nodes:
   // ... (if this is needed see in official tutorial example how to do it!)
@@ -131,13 +131,13 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->SetOutputArchive("log_archive.zip:");
   // Optionally set a name for the generated analysis macro (default
   // MyAnalysis.C)
-  plugin->SetAnalysisMacro(std::getenv("ANALYSISMACROFILENAME"));
+  plugin->SetAnalysisMacro(std::getenv("ANALYSIS_MACRO_FILE_NAME"));
   // Optionally set maximum number of input files/subjob (default 100, put 0 to
   // ignore)
   plugin->SetSplitMaxInputFileNumber(
-      std::stoi(std::getenv("INPUTFILESPERSUBJOB")));
+      std::stoi(std::getenv("INPUT_FILES_PER_SUBJOB")));
   // Optionally set number of runs per masterjob:
-  plugin->SetNrunsPerMaster(std::stoi(std::getenv("RUNSPERMASTERJOB")));
+  plugin->SetNrunsPerMaster(std::stoi(std::getenv("RUNS_PER_MASTERJOB")));
   // Optionally set overwrite mode. Will trigger overwriting input data
   // colections AND existing output files:
   plugin->SetOverwriteMode(kTRUE);
@@ -146,13 +146,13 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->SetMaxInitFailed(99);
   // Optionally resubmit threshold.
   plugin->SetMasterResubmitThreshold(
-      std::stoi(std::getenv("MASTERRESUBMITTHRESHOLD")));
+      std::stoi(std::getenv("MASTER_RESUBMIT_THRESHOLD")));
   // Optionally set time to live (default 30000 sec)
-  plugin->SetTTL(std::stoi(std::getenv("TIMETOLIVE")));
+  plugin->SetTTL(std::stoi(std::getenv("TIME_TO_LIVE")));
   // Optionally set input format (default xml-single)
   plugin->SetInputFormat("xml-single");
   // Optionally modify the name of the generated JDL (default analysis.jdl)
-  plugin->SetJDLName(std::getenv("JDLFILENAME"));
+  plugin->SetJDLName(std::getenv("JDL_FILE_NAME"));
   // Optionally modify job price (default 1)
   plugin->SetPrice(1);
   // Optionally modify split mode (default 'se')

@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 08.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -15,9 +15,9 @@ source GridConfig.sh
 set -u
 
 # if running locally, call aliroot and run.C macro with default values and bail out
-if [ $ANALYSISMODE = "local" ]; then
+if [ $ANALYSIS_MODE = "local" ]; then
     echo "Running locally over $DataDir"
-    echo "with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITYBINEDGES)"
+    echo "with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
     aliroot -q -l -b run.C
     exit 0
 fi
@@ -25,31 +25,30 @@ fi
 echo "running on Grid"
 
 # protect against overwriting existing analysis results
-if alien_find "${GRIDWORKINGDIRABS}/*" &>/dev/null; then
+if alien_find "${GRID_WORKING_DIR_ABS}/*" &>/dev/null; then
     echo "Working directory not empty. Creating backup..."
-    alien_mv ${GRIDWORKINGDIRABS} ${GRIDWORKINGDIRABS}.bak
+    alien_mv ${GRID_WORKING_DIR_ABS} ${GRID_WORKING_DIR_ABS}.bak
 fi
 
 # will run with offline mode to generate all necessary files
 echo "Run steering macros in offline mode to generate necessary files"
 aliroot -q -l -b run.C &>/dev/null
-echo "Modify jdl to use XML collections in $GRIDXMLCOLLECTION"
+echo "Modify jdl to use XML collections in $GRID_XML_COLLECTION"
 # TODO
 # add support for specifing weights run by run
-sed -i -e "s|${GRIDWORKINGDIRABS}/\$1,nodownload|${GRIDXMLCOLLECTION}/\$1,nodownload|" $JDLFILENAME
+sed -i -e "s|${GRID_WORKING_DIR_ABS}/\$1,nodownload|${GRID_XML_COLLECTION}/\$1,nodownload|" $JDL_FILE_NAME
 
 echo "Backup generated files"
 BackupDir="Offline"
 mkdir -p $BackupDir
-mv $JDLFILENAME $BackupDir
-mv $ANALYSISMACROFILENAME $BackupDir
+mv $JDL_FILE_NAME $BackupDir
+mv $ANALYSIS_MACRO_FILE_NAME $BackupDir
 mv analysis.sh $BackupDir
 mv analysis_validation.sh $BackupDir
 mv analysis.root $BackupDir
 
 echo "Copy everything we need to grid"
-alien_cp "$BackupDir/" "alien://$GRIDWORKINGDIRABS/"
-
+alien_cp "$BackupDir/" "alien://$GRID_WORKING_DIR_ABS/"
 
 #TODO move these variables to gridconfig
 # thresholds and limits
@@ -85,7 +84,7 @@ GetQuota() {
 }
 
 # submit jobs run by run
-for Run in $RUNNUMBER; do
+for Run in $RUN_NUMBER; do
 
     #TODO
     #keep log of submitted jobs
@@ -168,9 +167,9 @@ for Run in $RUNNUMBER; do
     echo "################################################################################"
     echo "All checks passed, we are good to go!"
     echo "################################################################################"
-    echo "Submit Run $Run with Task $TASKBASENAME with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITYBINEDGES)"
+    echo "Submit Run $Run with Task $TASK_BASENAME with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
 
-    alien_submit $GRIDWORKINGDIRABS/flowAnalysis.jdl "000${Run}.xml" $Run
+    alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run
 
     echo "Wait for Grid to catch up..."
 

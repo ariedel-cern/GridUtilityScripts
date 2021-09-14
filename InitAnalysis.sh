@@ -2,7 +2,7 @@
 # File              : InitAnalysis.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 14.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # initalize analysis
@@ -16,20 +16,20 @@ fi
 
 [ ! -d $GRID_UTILITY_SCRIPTS ] && echo "GridUtilityScripts not found!!!" && exit 1
 
-echo "Copy steering macros and example config into $PWD"
-cp $GRID_UTILITY_SCRIPTS/run.C run.C
-cp $GRID_UTILITY_SCRIPTS/CreateAlienHandler.C CreateAlienHandler.C
+echo "Copy templated steering macros and configuration file into $PWD"
+cp $GRID_UTILITY_SCRIPTS/run.C.template run.C
+cp $GRID_UTILITY_SCRIPTS/CreateAlienHandler.C.template CreateAlienHandler.C
 
 if [ -f "AddTask.C" ]; then
     echo "Found existings AddTask.C, create backup..."
     mv AddTask.C AddTask.C.bak
 fi
-cp $GRID_UTILITY_SCRIPTS/AddTask.C AddTask.C
+cp $GRID_UTILITY_SCRIPTS/AddTask.C.template AddTask.C
 
 if [ -f "GridConfig.sh" ]; then
     echo "Found existings GridConfig.sh, create backup..."
     mv GridConfig.sh GridConfig.sh.bak
 fi
-cp $GRID_UTILITY_SCRIPTS/GridConfig.sh.example GridConfig.sh
+cp $GRID_UTILITY_SCRIPTS/GridConfig.sh.template GridConfig.sh
 
 exit 0

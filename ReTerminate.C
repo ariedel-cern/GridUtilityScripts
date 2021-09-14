@@ -2,7 +2,7 @@
  * File              : ReTerminate.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.05.2021
- * Last Modified Date: 06.09.2021
+ * Last Modified Date: 14.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -23,7 +23,7 @@ Int_t ReTerminate(const char *mergedFileName) {
 
   // get TDirectoryFile holding all outputs
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-      mergedFile->Get(std::getenv("OUTPUTTDIRECTORYFILE")));
+      mergedFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
 
   /* create new TDirectoryFile to hold the updated outputs, give it the same
    * name and tile as the old one, cloning not working? */

@@ -2,7 +2,7 @@
  * File              : Trending.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 12.08.2021
- * Last Modified Date: 08.09.2021
+ * Last Modified Date: 14.09.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -38,7 +38,7 @@ Int_t Trending(const char *DataFiles, Int_t NumberOfRuns, const char *Output) {
     std::cout << runname << std::endl;
     File = TFile::Open(Filename.c_str(), "READ");
     ResultDir = dynamic_cast<TDirectoryFile *>(
-        File->Get(std::getenv("GRIDOUTPUTROOTFILE")));
+        File->Get(std::getenv("GRID_OUTPUT_ROOT_FILE")));
     // loop over tasks inside one file and the the final result profile
     listindex = 0;
     for (auto T : *(ResultDir->GetListOfKeys())) {
