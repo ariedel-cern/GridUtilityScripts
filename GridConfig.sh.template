@@ -2,7 +2,7 @@
 # File              : GridConfig.sh.template
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 16.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -19,7 +19,7 @@ export MAX_RESUBMIT="3"
 # configure task
 export TASK_BASENAME="Test"
 export ANALYSIS_NAME="Test0"
-export ALIPHYSICS_TAG="vAN-20210904_ROOT6-1"
+export ALIPHYSICS_TAG="vAN-20210914_ROOT6-1"
 export OUTPUT_TDIRECTORY_FILE="OutputAnalysis"
 export INPUT_FILES_PER_SUBJOB="50"
 export RUNS_PER_MASTERJOB="1"
@@ -42,6 +42,13 @@ export ANALYSIS_MACRO_FILE_NAME="flowAnalysis.C"
 # define directories and files on local machine
 export LOCAL_WORKING_DIR="$(realpath $(dirname ${BASH_SOURCE[0]}))"
 export LOCAL_TMP_DIR="/tmp"
+export LOCAL_OUTPUT_ROOT_FILE="Output.root"
+export LOCAL_OUTPUT_HISTOGRAMS=$(
+    cat <<'EOF'
+[kRECO]fEventControlHistograms[kCEN][kBEFORE]
+[kRECO]fEventControlHistograms[kCEN][kAFTER]
+EOF
+)
 
 # set analysis mode
 # has to be local or grid
