@@ -14,7 +14,7 @@ This a collection of scripts to ease the interaction with Grid during data analy
 
 Either source `SetupEnv.sh` directly or in your `.bashrc`. Run this command inside the repository
 ```
-echo "source $(realpath SetupEnv.sh) &>/dev/null" >> $HOME.bashrc
+echo "source $(realpath SetupEnv.sh) &>/dev/null" >> $HOME/.bashrc
 ```
 to automatically add it to your `.bashrc`.
 This way you can easily access all scripts and macros.
