@@ -24,7 +24,7 @@ echo "Clean up old $LOCAL_OUTPUT_ROOT_FILE in $GRID_OUTPUT_DIR_REL"
 find $GRID_OUTPUT_DIR_REL -name $LOCAL_OUTPUT_ROOT_FILE -exec rm -rf {} \+
 
 for Search in $LOCAL_OUTPUT_HISTOGRAMS; do
-    echo "Extract all $Search
+    echo "Extract all $Search"
     find $GRID_OUTPUT_DIR_REL -name "*Merged.root" | parallel "aliroot -q -l -b $GetHistsMacro\(\\\"{}\\\",\\\"{//}/$LOCAL_OUTPUT_ROOT_FILE\\\",\\\"$Search\\\"\)"
 done
 

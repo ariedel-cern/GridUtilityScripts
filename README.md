@@ -12,14 +12,17 @@ This a collection of scripts to ease the interaction with Grid during data analy
 
 ## Usage
 
-Either source `SetupEnv.sh` or set `$GRID_UTILITY_SCRIPTS`, which should point to this repo, in your `.bashrc` and add it to your `$PATH`.
+Either source `SetupEnv.sh` directly or in your `.bashrc`. Run this command inside the repository
+```
+echo "source $(realpath SetupEnv.sh) &>/dev/null" >> $HOME.bashrc
+```
+to automatically add it to your `.bashrc`.
 This way you can easily access all scripts and macros.
 
 ## Scripts
 
 ### SetupEnv.sh
 Export `$GRID_UTILITY_SCRIPTS`, which is the path to this repo and add it to `$PATH`.
-Only use this if you do not set these environment variables in your `.bashrc`.
 
 ### InitAnalysis.sh
 Initialize analysis in a new directory by copying over the templated steering macros and `GridConfig.sh`.
@@ -36,6 +39,12 @@ Copy files from Grid to the local machine.
 ### CheckFileIntegrity.sh
 Check integrity of local files copied from the Grid.
 
+### KillAllJobs.sh
+Kill all jobs which are not finished or killed yet. Nice for wrapping up the analysis.
+
+### KillAllFailedJobs.sh
+Similar to above, but just killing jobs which are in an ERROR state.
+
 ### Merge.sh
 Wrapper script around the macro with the same name. Merge local files run by run.
 
@@ -48,11 +57,8 @@ Wrapper script around the macro with the same name. Compute kinematic weights fr
 ### ComputeCentralityProbabilities.sh
 Wrapper script around the macro with the same name. Compute centrality probabilities for centrality flattening from merged files run by run. 
 
-### KillAllJobs.sh
-Kill all jobs which are not finished or killed yet. Nice for wrapping up the analysis.
-
-### KillAllFailedJobs.sh
-Similar to above, but just killing jobs which are in an ERROR state.
+### GetHists.sh
+Wrapper script around the macro with the same name. Search for histograms specified in `GridConfig.sh` run by run, task by task and dump the histograms into a seperate ROOT file. Convient if you want to use a certain histograms for further analysis.
 
 ## Steering macros
 

@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 16.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -17,8 +17,8 @@ Check_Integrity() {
     {
         file -E $1 || Flag=1
         rootls $1 || Flag=1
+        # ADD MORE CHECKS
     } &>/dev/null
-    # ADD MORE CHECKS
 
     # remove file if a check is not passed
     if [ $Flag -eq 1 ]; then
