@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 20.09.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -49,21 +49,23 @@ while [ $Flag -eq 0 ]; do
 
     echo "# files on grid       : $(wc -l $FilesOnGrid)"
     echo "# files locally       : $(wc -l $FilesOnDisk)"
-    echo "# files failed to copy: $(wc -l $FilesFailedCopy)"
     echo "# files left to copy  : $(wc -l $FilesCopy) "
     echo "Watch log $CopyLog"
 
     # copy files
+    # let alien handle parallel downloads
     alien_cp -T $COPY_JOBS -input $FilesCopy &>$CopyLog
 
     # search for failed copies
     awk '$1=="Failed" {print $3}' $CopyLog | sed -e "s|${GRID_WORKING_DIR_ABS}/||" | sort -u >$FilesFailedCopy
+    echo "# files failed to copy: $(wc -l $FilesFailedCopy)"
 
     echo "Copied all files in this batch. Wait for the next..."
 
     GridTimeout.sh $TIMEOUT
 done
 
+# cleanup
 rm -rf $LOCAL_TMP_DIR
 
 exit 0
