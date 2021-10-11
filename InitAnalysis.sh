@@ -2,7 +2,7 @@
 # File              : InitAnalysis.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 06.10.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # initalize analysis
@@ -16,7 +16,7 @@ fi
 
 [ ! -d $GRID_UTILITY_SCRIPTS ] && echo "GridUtilityScripts not found!!!" && exit 1
 
-echo "Copy templated steering macros and configuration file into $PWD"
+echo "Copy configuration files into $PWD"
 cp $GRID_UTILITY_SCRIPTS/run.C.template run.C
 cp $GRID_UTILITY_SCRIPTS/CreateAlienHandler.C.template CreateAlienHandler.C
 

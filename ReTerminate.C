@@ -2,7 +2,7 @@
  * File              : ReTerminate.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.05.2021
- * Last Modified Date: 14.09.2021
+ * Last Modified Date: 08.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -19,7 +19,7 @@ Int_t ReTerminate(const char *mergedFileName) {
   TFile *updatedFile = new TFile(reterminatedFileName.c_str(), "RECREATE");
 
   // initalize task
-  AliAnalysisTaskAR *Task = new AliAnalysisTaskAR("ReTerminate", kFALSE);
+  AliAnalysisTaskAR *Task = new AliAnalysisTaskAR("ReTerminate");
 
   // get TDirectoryFile holding all outputs
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(

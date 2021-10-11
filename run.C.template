@@ -18,9 +18,9 @@ R__ADD_INCLUDE_PATH($ALICE_PHYSICS)
 #include "OADB/macros/AddTaskPhysicsSelection.C"
 #endif
 
-// local macros
-#include "AddTask.C"
+// local macro configuring the task
 #include "CreateAlienHandler.C"
+#include "AddTask.C"
 
 // local function declarations
 void LoadLibraries();
@@ -130,7 +130,7 @@ void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
     Float_t highCentralityBinEdge = CentralityBins.at(i + 1);
     Printf("\nWagon for centrality bin %i: %.1f-%.1f", int(i),
            lowCentralityBinEdge, highCentralityBinEdge);
-    AddTask(lowCentralityBinEdge, highCentralityBinEdge, bRunOverAOD);
+    AddTask(lowCentralityBinEdge, highCentralityBinEdge);
   }
 
   // j) Enable debug printouts:
