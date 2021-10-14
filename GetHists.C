@@ -6,7 +6,8 @@
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
-#include "InterateList.H"
+#include "GridHelperMacros.H"
+#include <algorithm>
 
 Int_t GetHists(const char *DataFile, const char *OutputFileName,
                const char *Search) {
@@ -19,22 +20,24 @@ Int_t GetHists(const char *DataFile, const char *OutputFileName,
 
   TFile *outputFile = new TFile(OutputFileName, "UPDATE");
   TList *searchList;
-  TList *resultList = new TList();
-  resultList->SetOwner(kTRUE);
+  TObject *obj;
+  TH1D *hist;
   std::string searchString(Search);
-  std::string prefix;
+  std::string name;
 
   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
 
+    std::cout << "Working on Task: " << KeyTask->GetName() << std::endl;
     searchList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
-    prefix = std::string(KeyTask->GetName());
-    prefix += "_";
-    IterateList(searchList, resultList, searchString, prefix);
+    name = std::string(KeyTask->GetName());
+    name += "_";
 
-    for (auto obj : *resultList) {
-      obj->Write();
-    }
-    resultList->Clear();
+    obj = Iterate(searchList, searchString);
+    name += obj->GetName();
+
+    hist = dynamic_cast<TH1D *>(obj->Clone(name.c_str()));
+
+    hist->Write();
   }
 
   outputFile->Close();
