@@ -2,7 +2,7 @@
  * File              : ComputeKinematicWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 14.09.2021
+ * Last Modified Date: 14.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -77,13 +77,13 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
 
   // compute pt weights
   if (ptHistSim) {
-    ptWeightHist = dynamic_cast<TH1D *>(ptHistReco->Clone("PtWeights"));
+    ptWeightHist = dynamic_cast<TH1D *>(ptHistSim->Clone("PtWeights"));
     ptWeightHist->SetTitle("p_{T} weights");
-    ptWeightHist->Divide(ptHistSim);
+    ptWeightHist->Divide(ptHistReco);
 
     // scale with the inverse ratio of the average bin content
-    scale = (ptHistSim->GetEntries() / ptHistSim->GetNbinsX()) /
-            (ptHistReco->GetEntries() / ptHistReco->GetNbinsX());
+    scale = (ptHistReco->GetEntries() / ptHistReco->GetNbinsX()) /
+            (ptHistSim->GetEntries() / ptHistSim->GetNbinsX());
     for (Int_t i = 1; i <= ptWeightHist->GetNbinsX(); i++) {
       ptWeightHist->SetBinContent(i, scale * ptWeightHist->GetBinContent(i));
     }
@@ -91,13 +91,13 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
 
   // compute eta weights
   if (etaHistSim) {
-    etaWeightHist = dynamic_cast<TH1D *>(etaHistReco->Clone("EtaWeights"));
-    etaWeightHist->Divide(etaHistSim);
+    etaWeightHist = dynamic_cast<TH1D *>(etaHistSim->Clone("EtaWeights"));
+    etaWeightHist->Divide(etaHistReco);
     etaWeightHist->SetTitle("#eta weights");
 
     // scale with the inverse ratio of the average bin content
-    scale = (etaHistSim->GetEntries() / etaHistSim->GetNbinsX()) /
-            (etaHistReco->GetEntries() / etaHistReco->GetNbinsX());
+    scale = (etaHistReco->GetEntries() / etaHistReco->GetNbinsX()) /
+            (etaHistSim->GetEntries() / etaHistSim->GetNbinsX());
     for (Int_t i = 1; i <= etaWeightHist->GetNbinsX(); i++) {
       etaWeightHist->SetBinContent(i, scale * etaWeightHist->GetBinContent(i));
     }

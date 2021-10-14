@@ -1,0 +1,12 @@
+#!/bin/bash
+# File              : KillWaitingJobs.sh
+# Author            : Anton Riedel <anton.riedel@tum.de>
+# Date              : 05.08.2021
+# Last Modified Date: 13.10.2021
+# Last Modified By  : Anton Riedel <anton.riedel@tum.de>
+
+# kill all jobs in error state
+
+alien_ps -W | awk '{print $2}' | parallel --progress --bar "alien.py kill {}"
+
+exit 0

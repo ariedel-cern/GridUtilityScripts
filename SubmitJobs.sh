@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 11.10.2021
+# Last Modified Date: 12.10.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -54,8 +54,8 @@ alien_cp "$BackupDir/" "alien://$GRID_WORKING_DIR_ABS/"
 # thresholds and limits
 Limit_RunningSubjobs="1500"
 Threshold_RunningSubjobs="1200"
-Threshold_WaitingSubjobs="50"
-Threshold_InErrorSubjobs="50"
+Threshold_WaitingSubjobs="100"
+Threshold_InErrorSubjobs="100"
 Limit_RunningTime="100"
 Threshold_RunningTime="90"
 Limit_CPUCost="100"
@@ -142,7 +142,7 @@ for Run in $RUN_NUMBER; do
         echo "$MasterjobsNotReady masterjobs are not running yet"
         echo "$MasterjobsInError masterjobs are in error state"
 
-        if [ $MasterjobsNotReady -gt 0 ]; then
+        if [ $MasterjobsNotReady -gt 1 ]; then
             echo "Wait for other masterjobs to start running"
 
             GridTimeout.sh $SmallTimeout
@@ -169,7 +169,11 @@ for Run in $RUN_NUMBER; do
     echo "################################################################################"
     echo "Submit Run $Run with Task $TASK_BASENAME with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
 
-    alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run
+    if [ $RUN_OVER_DATA -eq 1 ];then
+        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run
+    else
+        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "${Run}.xml" $Run
+    fi
 
     echo "Wait for Grid to catch up..."
 

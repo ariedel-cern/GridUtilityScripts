@@ -2,7 +2,7 @@
  * File              : Merge.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 19.03.2021
- * Last Modified Date: 18.06.2021
+ * Last Modified Date: 14.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -32,7 +32,7 @@ Int_t Merge(const char *filename, const char *output) {
   std::vector<std::string> batch;
 
   /* merge in cycles such that we do not open too many files simultaneously */
-  Int_t nCycles = 10;
+  Int_t nCycles = 100;
   Int_t n = 0;
 
   /* loop over all file names */
