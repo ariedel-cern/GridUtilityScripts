@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 12.10.2021
+# Last Modified Date: 15.10.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -53,9 +53,8 @@ alien_cp "$BackupDir/" "alien://$GRID_WORKING_DIR_ABS/"
 #TODO move these variables to gridconfig
 # thresholds and limits
 Limit_RunningSubjobs="1500"
-Threshold_RunningSubjobs="1200"
-Threshold_WaitingSubjobs="100"
-Threshold_InErrorSubjobs="100"
+Threshold_Subjobs="1300"
+Threshold_InErrorSubjobs="200"
 Limit_RunningTime="100"
 Threshold_RunningTime="90"
 Limit_CPUCost="100"
@@ -70,6 +69,8 @@ CPUCost="0"
 MasterjobsNotReady="0"
 MasterjobsInError="0"
 SmallTimeout="20"
+RunCounter="0"
+NumberOfRuns=$(wc -l <<<$RUN_NUMBER)
 
 GetQuota() {
     # fill global variables
@@ -88,7 +89,6 @@ for Run in $RUN_NUMBER; do
 
     #TODO
     #keep log of submitted jobs
-    #keep counter Submitted/Total Number of runs
 
     while :; do
 
@@ -98,17 +98,17 @@ for Run in $RUN_NUMBER; do
 
         GetQuota
 
-        echo "$RunningSubjobs/$Limit_RunningSubjobs Subjobs are running"
-        echo "$InErrorSubjobs Subjobs are in error"
+        echo "$RunningSubjobs Subjobs are running"
         echo "$WaitingSubjobs Subjobs are waiting"
+        echo "$InErrorSubjobs Subjobs are in error"
         echo "$RunningTime/${Limit_RunningTime}% Running time is used"
         echo "$CPUCost/${Limit_CPUCost}% CPU cost is used"
 
-        if [ $RunningSubjobs -gt $Threshold_RunningSubjobs ] || [ $RunningTime -gt $Threshold_RunningTime ] || [ $CPUCost -gt $Threshold_CPUCost ]; then
+        if [ $(($RunningSubjobs+$WaitingSubjobs)) -gt $Threshold_Subjobs ] || [ $RunningTime -gt $Threshold_RunningTime ] || [ $CPUCost -gt $Threshold_CPUCost ]; then
             echo "Exeeded threshold, wait for things to calm down..."
-            echo "Threshold for number of running jobs: $Threshold_RunningSubjobs"
-            echo "Threshold for running time: $Threshold_RunningTime"
-            echo "Threshold for CPU cost: $Threshold_CPUCost"
+            echo "$(($RunningSubjobs+$WaitingSubjobs))/$Threshold_Subjobs are running/waiting"
+            echo "$RunningTime/$Threshold_RunningTime Running Time was used"
+            echo "$CPUCost/$Threshold_CPUCost CPU cost was used"
 
             GridTimeout.sh $TIMEOUT
 
@@ -123,13 +123,6 @@ for Run in $RUN_NUMBER; do
 
             echo "$InErrorSubjobs Subjobs are in error state, resubmit them..."
             Resubmit.sh
-            GridTimeout.sh $SmallTimeout
-
-            continue
-        fi
-
-        if [ $WaitingSubjobs -gt $Threshold_WaitingSubjobs ]; then
-            echo "$WaitingSubjobs Subjobs are waiting, lets wait as well..."
             GridTimeout.sh $SmallTimeout
 
             continue
@@ -170,11 +163,15 @@ for Run in $RUN_NUMBER; do
     echo "Submit Run $Run with Task $TASK_BASENAME with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
 
     if [ $RUN_OVER_DATA -eq 1 ];then
+        # submit run over data
         alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run
     else
+        #submit run over MC production
         alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "${Run}.xml" $Run
     fi
 
+    ((RunCounter++))
+    echo "Submitted $RunCounter/$NumberOfRuns Runs"
     echo "Wait for Grid to catch up..."
 
     GridTimeout.sh $SmallTimeout
