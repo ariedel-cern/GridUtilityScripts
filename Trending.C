@@ -9,8 +9,7 @@
 #include "GridHelperMacros.H"
 #include <boost/algorithm/string.hpp>
 
-Int_t Trending(const char *DataFiles, Int_t NumberOfRuns, const char *Output,
-               const char *Trend) {
+Int_t Trending(const char *DataFiles, Int_t NumberOfRuns, const char *Trend) {
 
   // file holding list of all merged files
   std::ifstream Filenames(DataFiles);
@@ -62,7 +61,7 @@ Int_t Trending(const char *DataFiles, Int_t NumberOfRuns, const char *Output,
     Run++;
   }
 
-  TFile *out = new TFile(Output, "UPDATE");
+  TFile *out = new TFile(std::getenv("LOCAL_OUTPUT_TRENDING_FILE"), "UPDATE");
   hist->Write();
   out->Close();
 
