@@ -2,7 +2,7 @@
  * File              : Trending.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 12.08.2021
- * Last Modified Date: 14.10.2021
+ * Last Modified Date: 27.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -49,7 +49,7 @@ Int_t Trending(const char *DataFiles, Int_t NumberOfRuns, const char *Output,
     // only support for one task so far
     for (auto T : *(ResultDir->GetListOfKeys())) {
       Task = dynamic_cast<TList *>(ResultDir->Get(T->GetName()));
-      tmp = dynamic_cast<TH1 *>(Iterate(Task, std::string(Trend)));
+      tmp = dynamic_cast<TH1 *>(IterateList(Task, std::string(Trend)));
       break;
     }
 

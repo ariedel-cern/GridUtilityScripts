@@ -2,7 +2,7 @@
  * File              : GetHists.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 15.09.2021
- * Last Modified Date: 14.10.2021
+ * Last Modified Date: 27.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -32,7 +32,7 @@ Int_t GetHists(const char *DataFile, const char *OutputFileName,
     name = std::string(KeyTask->GetName());
     name += "_";
 
-    obj = Iterate(searchList, searchString);
+    obj = IterateList(searchList, searchString);
     name += obj->GetName();
 
     hist = dynamic_cast<TH1D *>(obj->Clone(name.c_str()));

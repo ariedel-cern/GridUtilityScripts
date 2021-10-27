@@ -2,7 +2,7 @@
  * File              : ComputeKinematicWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 16.10.2021
+ * Last Modified Date: 27.10.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -38,15 +38,15 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
     TaskList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
 
     // get distributions after cut
-    phiHist = dynamic_cast<TH1D *>(Iterate(
+    phiHist = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kRECO]fTrackControlHistograms[kPHI][kAFTER]")));
-    ptHistReco = dynamic_cast<TH1D *>(Iterate(
+    ptHistReco = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kRECO]fTrackControlHistograms[kPT][kAFTER]")));
-    ptHistSim = dynamic_cast<TH1D *>(Iterate(
+    ptHistSim = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kSIM]fTrackControlHistograms[kPT][kAFTER]")));
-    etaHistReco = dynamic_cast<TH1D *>(Iterate(
+    etaHistReco = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kRECO]fTrackControlHistograms[kETA][kAFTER]")));
-    etaHistSim = dynamic_cast<TH1D *>(Iterate(
+    etaHistSim = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kSIM]fTrackControlHistograms[kETA][kAFTER]")));
 
     // compute phi weights
