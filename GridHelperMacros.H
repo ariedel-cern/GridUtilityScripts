@@ -2,7 +2,7 @@
  * File              : GridHelperMacros.H
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.10.2021
- * Last Modified Date: 27.10.2021
+ * Last Modified Date: 02.11.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -41,3 +41,38 @@ TObject *IterateList(TList *list, std::string searchString) {
   }
   return obj;
 }
+
+// TObject *GetFromOutpuFile(std::string observable){
+
+//   // open output directory
+//   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
+//       dataFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
+
+//   TFile *outputFile = new TFile(OutputFileName, "UPDATE");
+//   TList *searchList;
+//   TObject *obj;
+//   TH1D *hist;
+//   std::string searchString(Search);
+//   std::string name;
+
+//   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
+
+//     std::cout << "Working on Task: " << KeyTask->GetName() << std::endl;
+//     searchList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
+//     name = std::string(KeyTask->GetName());
+//     name += "_";
+
+//     obj = IterateList(searchList, searchString);
+//     name += obj->GetName();
+
+//     hist = dynamic_cast<TH1D *>(obj->Clone(name.c_str()));
+
+//     hist->Write();
+//   }
+
+//   outputFile->Close();
+//   dataFile->Close();
+//   return 0;
+// }
+
+// }

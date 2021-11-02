@@ -54,6 +54,12 @@ fFinalResultHistograms[kAVGPHI]
 fFinalResultHistograms[kAVGCEN]
 EOF
 )
+export LOCAL_OUTPUT_BOOTSTRAP_FILE="Bootstrap.root"
+export LOCAL_OUTPUT_BOOTSTRAP=$(
+    cat <<'EOF'
+    SC(2,3)
+EOF
+)
 
 # set analysis mode
 # has to be local or grid
@@ -82,8 +88,8 @@ export RUN_OVER_AOD="1"
 # [ $RUN_OVER_DATA -eq 0 -a $RUN_OVER_AOD -eq 1 ] && export DataDir="/home/vagrant/sim/LHC10d4/120822/AOD056"
 
 # path to own xml collection so we do not need to recreate them every time
-[ $RUN_OVER_DATA -q 1 ] && export GRID_XML_COLLECTION="${GRID_HOME_DIR}/XMLcollections/LHC10h/pass2/AOD/AOD160"
-[ $RUN_OVER_DATA -q 0 ] && export GRID_XML_COLLECTION="${GRID_HOME_DIR}/XMLcollections/LHC11a10a_bis/pass2/AOD/AOD162"
+[ $RUN_OVER_DATA -eq 1 ] && export GRID_XML_COLLECTION="${GRID_HOME_DIR}/XMLcollections/LHC10h/pass2/AOD/AOD160"
+[ $RUN_OVER_DATA -eq 0 ] && export GRID_XML_COLLECTION="${GRID_HOME_DIR}/XMLcollections/LHC11a10a_bis/pass2/AOD/AOD162"
 
 # configure centrality bins
 export CENTRALITY_BIN_EDGES=$(

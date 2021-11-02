@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 15.10.2021
+# Last Modified Date: 28.10.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -146,7 +146,7 @@ for Run in $RUN_NUMBER; do
         if [ $MasterjobsInError -gt 0 ]; then
             echo "Resubmit masterjobs in error state"
 
-            alien_ps -E -M | awk '{print $2}' | parallel --status --bar "alien.py resubmit {}"
+            alien_ps -E -M | awk '{print $2}' | parallel --progress --bar "alien.py resubmit {}"
 
             GridTimeout.sh $SmallTimeout
 

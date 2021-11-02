@@ -2,7 +2,7 @@
 # File              : ReTerminate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 31.08.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 02.11.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reterminate merged .root files run by run
