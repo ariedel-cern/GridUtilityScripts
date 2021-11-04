@@ -2,7 +2,7 @@
  * File              : Subsamples.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 03.11.2021
- * Last Modified Date: 03.11.2021
+ * Last Modified Date: 04.11.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -47,9 +47,10 @@ Int_t Subsamples(const char *listOfFiles, const char *outputFileName) {
     File->Close();
   }
 
-  Double_t N = 5;
+  Double_t N = 10;
   Double_t Target = std::accumulate(events.begin(), events.end(), 0.) / N;
-  Double_t alpha = 0.4;
+  std::cout << Target << std::endl;
+  Double_t alpha = 1.4;
 
   Double_t sampleSize = 0;
   std::vector<std::string> sample;
@@ -59,6 +60,23 @@ Int_t Subsamples(const char *listOfFiles, const char *outputFileName) {
 
   std::ofstream outFile(outputFileName);
 
+  while (index < files.size()) {
+
+    if (events.at(index) < Target) {
+      index++;
+      continue;
+    } else {
+      std::cout << "Found a dominate one" << std::endl;
+      outFile << files.at(index) << std::endl;
+      outFile << std::endl;
+      events.erase(events.begin() + index);
+      files.erase(files.begin() + index);
+      counter++;
+    }
+  }
+
+  index = 0;
+
   // sort(events.begin(), events.end(), greater<Double_t>());
 
   while (!files.empty()) {
@@ -67,12 +85,12 @@ Int_t Subsamples(const char *listOfFiles, const char *outputFileName) {
               << "sample size " << sampleSize << std::endl
               << "number of files " << sample.size() << std::endl;
 
-    if (sampleSize + events.at(index) < Target * (1 - alpha)) {
+    if (sampleSize + events.at(index) < Target) {
       sampleSize += events.at(index);
       events.erase(events.begin() + index);
       sample.push_back(files.at(index));
       files.erase(files.begin() + index);
-    } else if (sampleSize + events.at(index) > Target * (1 + alpha)) {
+    } else if (sampleSize + events.at(index) > Target * alpha) {
       index++;
     } else {
 

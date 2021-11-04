@@ -2,7 +2,7 @@
 # File              : Bootstrap.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 27.10.2021
-# Last Modified Date: 03.11.2021
+# Last Modified Date: 04.11.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 source GridConfig.sh
@@ -25,13 +25,12 @@ else
 fi
 
 # devide runs into chunks with approximately the same number of events
-# use this placeholder for testing purposes for now
-Subsamples="Subsamples.txt"
 
 if [ ! -f $LOCAL_SUBSAMPLES_FILE ]; then
     Files="ReTerminated.txt"
     find $GRID_OUTPUT_DIR_REL -type f -name "*ReTerminated.root" >$Files
     aliroot -q -l -b $SubsamplesMacro\(\"$Files\",\"$LOCAL_SUBSAMPLES_FILE\"\)
+    exit 1
 fi
 
 # clean up
