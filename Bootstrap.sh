@@ -25,11 +25,14 @@ else
 fi
 
 # devide runs into chunks with approximately the same number of events
-
 if [ ! -f $LOCAL_SUBSAMPLES_FILE ]; then
     Files="ReTerminated.txt"
     find $GRID_OUTPUT_DIR_REL -type f -name "*ReTerminated.root" >$Files
     aliroot -q -l -b $SubsamplesMacro\(\"$Files\",\"$LOCAL_SUBSAMPLES_FILE\"\)
+    rm $Files
+    echo "Prefiltered runs into Subsamples"
+    echo "USE CheckSubsamples.sh TO CHECK THE DISTRIBUTION AND ADJUST BY HAND"
+    echo "Bailing out for now ..."
     exit 1
 fi
 
