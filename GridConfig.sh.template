@@ -2,7 +2,7 @@
 # File              : GridConfig.sh.template
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 03.11.2021
+# Last Modified Date: 30.11.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -15,6 +15,13 @@
 export TIMEOUT="300"
 export COPY_JOBS="120"
 export MAX_RESUBMIT="3"
+export LIMIT_RUNNING_SUBJOBS="1500"
+export THRESHOLD_SUBJOBS="1300"
+export THRESHOLD_ERROR_SUBJOBS="200"
+export LIMIT_RUNNING_TIME="100"
+export THRESHOLD_RUNNING_TIME="90"
+export LIMIT_CPU_COST="100"
+export THRESHOLD_CPU_COST="90"
 
 # configure task
 export TASK_BASENAME="Test"
@@ -39,7 +46,8 @@ export ANALYSIS_MACRO_FILE_NAME="flowAnalysis.C"
 
 # define directories and files on local machine
 export LOCAL_WORKING_DIR="$(realpath $(dirname ${BASH_SOURCE[0]}))"
-export LOCAL_TMP_DIR="/tmp"
+export LOCAL_TMP_DIR="$LOCAL_WORKING_DIR/tmp"
+mkdir -p $LOCAL_TMP_DIR
 export LOCAL_OUTPUT_ROOT_FILE="Output.root"
 export LOCAL_OUTPUT_HISTOGRAMS=$(
     cat <<'EOF'
@@ -61,6 +69,10 @@ export LOCAL_OUTPUT_BOOTSTRAP=$(
     SC(2,3)
 EOF
 )
+
+# define temporary files holding meta data
+export TMP_MASTERJOBS="$LOCAL_TMP_DIR/Masterjobs.tmp"
+export TMP_MASTERJOBS_META="$LOCAL_TMP_DIR/Masterjobs_meta.tmp"
 
 # set analysis mode
 # has to be local or grid

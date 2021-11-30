@@ -28,8 +28,8 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
   // initalize objects
   TList *TaskList;
   TList *Hists = new TList();
-  TH1D *phiHist, *phiWeightHist *ptHistReco, *ptHistSim,
-      *ptWeightHist *etaHistReco, *etaHistSim, *etaWeightHist;
+  TH1D *phiHist, *phiWeightHist, *ptHistReco, *ptHistSim, *ptWeightHist,
+      *etaHistReco, *etaHistSim, *etaWeightHist;
 
   // loop over all tasks
   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {

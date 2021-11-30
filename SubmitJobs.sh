@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 28.10.2021
+# Last Modified Date: 30.11.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -27,38 +27,32 @@ echo "running on Grid"
 # protect against overwriting existing analysis results
 if alien_find "${GRID_WORKING_DIR_ABS}/*" &>/dev/null; then
     echo "Working directory not empty. Creating backup..."
-    alien_mv ${GRID_WORKING_DIR_ABS} ${GRID_WORKING_DIR_ABS}.bak
+    alien_mv ${GRID_WORKING_DIR_ABS} ${GRID_WORKING_DIR_ABS}.bak || exit 1
 fi
 
 # will run with offline mode to generate all necessary files
 echo "Run steering macros in offline mode to generate necessary files"
-aliroot -q -l -b run.C &>/dev/null
+aliroot -q -l -b run.C
 echo "Modify jdl to use XML collections in $GRID_XML_COLLECTION"
 # TODO
 # add support for specifing weights run by run
 sed -i -e "s|${GRID_WORKING_DIR_ABS}/\$1,nodownload|${GRID_XML_COLLECTION}/\$1,nodownload|" $JDL_FILE_NAME
 
-echo "Backup generated files"
-BackupDir="Offline"
-mkdir -p $BackupDir
-mv $JDL_FILE_NAME $BackupDir
-mv $ANALYSIS_MACRO_FILE_NAME $BackupDir
-mv analysis.sh $BackupDir
-mv analysis_validation.sh $BackupDir
-mv analysis.root $BackupDir
+mv $JDL_FILE_NAME $LOCAL_TMP_DIR
+mv $ANALYSIS_MACRO_FILE_NAME $LOCAL_TMP_DIR
+mv analysis.sh $LOCAL_TMP_DIR
+mv analysis_validation.sh $LOCAL_TMP_DIR
+mv analysis.root $LOCAL_TMP_DIR
 
 echo "Copy everything we need to grid"
-alien_cp "$BackupDir/" "alien://$GRID_WORKING_DIR_ABS/"
+alien_cp "file://$LOCAL_TMP_DIR/$JDL_FILE_NAME" "alien://$GRID_WORKING_DIR_ABS/" || exit 2
+alien_cp "file://$LOCAL_TMP_DIR/$ANALYSIS_MACRO_FILE_NAME" "alien://$GRID_WORKING_DIR_ABS/" || exit 2
+alien_cp "file://$LOCAL_TMP_DIR/$analysis.sh" "alien://$GRID_WORKING_DIR_ABS/" || exit 2
+alien_cp "file://$LOCAL_TMP_DIR/$analysis_validation.sh" "alien://$GRID_WORKING_DIR_ABS/" || exit 2
+alien_cp "file://$LOCAL_TMP_DIR/$analysis.root" "alien://$GRID_WORKING_DIR_ABS/" || exit 2
 
-#TODO move these variables to gridconfig
-# thresholds and limits
-Limit_RunningSubjobs="1500"
-Threshold_Subjobs="1300"
-Threshold_InErrorSubjobs="200"
-Limit_RunningTime="100"
-Threshold_RunningTime="90"
-Limit_CPUCost="100"
-Threshold_CPUCost="90"
+[ -f $TMP_MASTERJOBS ] && rm $TMP_MASTERJOBS
+touch $TMP_MASTERJOBS
 
 # variables
 RunningSubjobs="0"
@@ -87,9 +81,6 @@ GetQuota() {
 # submit jobs run by run
 for Run in $RUN_NUMBER; do
 
-    #TODO
-    #keep log of submitted jobs
-
     while :; do
 
         echo "################################################################################"
@@ -101,14 +92,14 @@ for Run in $RUN_NUMBER; do
         echo "$RunningSubjobs Subjobs are running"
         echo "$WaitingSubjobs Subjobs are waiting"
         echo "$InErrorSubjobs Subjobs are in error"
-        echo "$RunningTime/${Limit_RunningTime}% Running time is used"
-        echo "$CPUCost/${Limit_CPUCost}% CPU cost is used"
+        echo "$RunningTime/${LIMIT_RUNNING_SUBJOBS}% Running time is used"
+        echo "$CPUCost/${LIMIT_CPU_COST}% CPU cost is used"
 
-        if [ $(($RunningSubjobs+$WaitingSubjobs)) -gt $Threshold_Subjobs ] || [ $RunningTime -gt $Threshold_RunningTime ] || [ $CPUCost -gt $Threshold_CPUCost ]; then
+        if [ $(($RunningSubjobs+$WaitingSubjobs)) -gt $THRESHOLD_SUBJOBS ] || [ $RunningTime -gt $THRESHOLD_RUNNING_TIME ] || [ $CPUCost -gt $THRESHOLD_CPU_COST ]; then
             echo "Exeeded threshold, wait for things to calm down..."
-            echo "$(($RunningSubjobs+$WaitingSubjobs))/$Threshold_Subjobs are running/waiting"
-            echo "$RunningTime/$Threshold_RunningTime Running Time was used"
-            echo "$CPUCost/$Threshold_CPUCost CPU cost was used"
+            echo "$(($RunningSubjobs+$WaitingSubjobs))/$THRESHOLD_SUBJOBS are running/waiting"
+            echo "$RunningTime/$THRESHOLD_RUNNING_TIME Running Time was used"
+            echo "$CPUCost/$THRESHOLD_CPU_COST CPU cost was used"
 
             GridTimeout.sh $TIMEOUT
 
@@ -119,7 +110,7 @@ for Run in $RUN_NUMBER; do
         echo "Checking quota passed, checking status of other subjobs"
         echo "################################################################################"
 
-        if [ $InErrorSubjobs -gt $Threshold_InErrorSubjobs ]; then
+        if [ $InErrorSubjobs -gt $THRESHOLD_ERROR_SUBJOBS ]; then
 
             echo "$InErrorSubjobs Subjobs are in error state, resubmit them..."
             Resubmit.sh
@@ -164,17 +155,20 @@ for Run in $RUN_NUMBER; do
 
     if [ $RUN_OVER_DATA -eq 1 ];then
         # submit run over data
-        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run
+        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run | awk 'FNR==2 {print $NF}' | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" | tee -a $TMP_MASTERJOBS
     else
-        #submit run over MC production
-        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "${Run}.xml" $Run
+        # submit run over MC production
+        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "${Run}.xml" $Run | awk 'FNR==2 {print $NF}' | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" | tee -a $TMP_MASTERJOBS
     fi
 
     ((RunCounter++))
     echo "Submitted $RunCounter/$NumberOfRuns Runs"
     echo "Wait for Grid to catch up..."
 
-    GridTimeout.sh $SmallTimeout
+    if [ $RunCounter -lt $NumberOfRuns ];then
+        # don wait after last job is submitted
+        GridTimeout.sh $SmallTimeout
+    fi
 
 done
 

@@ -32,10 +32,12 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   //  Example 1: MC production (set in macro runFlowTask.C: bRunOverData =
   //  kFALSE)
   if (!bRunOverData) {
-    plugin->SetGridDataDir("/alice/sim/MC_PRODUCTION");
-    plugin->SetDataPattern(
-        "*AliESDs.root"); // The default data pattern, other may be "*tag.root",
-                          // "*ESD.tag.root", etc
+    plugin->SetGridDataDir("/alice/sim/LHC11a10a_bis");
+    plugin->SetDataPattern("pass2/AOD162/*AOD.root");
+
+    // The default data pattern, other may be
+    // "*tag.root",
+    // "*ESD.tag.root", etc
     // const Int_t nMC_Runs = 1;
     // Int_t runNo[nMC_Runs] = {137161};
     // for (Int_t r = 0; r < nMC_Runs; r++) {
