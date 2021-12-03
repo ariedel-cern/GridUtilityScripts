@@ -2,19 +2,38 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 01.12.2021
+# Last Modified Date: 02.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
 
+# source config file
+[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
+source GridConfig.sh
+
 # before running make sure that weights are available and that the split for bootstrap is known
 
-Submit.sh
+# submit jobs to the grid -> 1. Reincarnation
+( SubmitJobs.sh ) &>$SUBMIT_LOG &
 
-Reincarnate.sh
+# gather meta data about all running jobs
+( GetMetaData.sh ) &> $GETMETADATA_LOG &
 
-CopyFromGrid.sh
+# reincarnate failed jobs
+( Reincarnate.sh ) &>$REINCARNATE_LOG &
 
-CheckFileIntegrity.sh
+# copy file from grid
+( CopyFromGrid.sh ) &>$COPY_LOG &
 
-Merge.sh
+# check integrity of copied files
+( CheckFileIntegrity.sh ) &>$CHECKINTEGRITY_LOG &
+
+# merge files run by run
+( Merge.sh ) &>$MERGE_LOG &
+
+echo "Analysis Train still going..."
+wait 
+
+echo "FINISHED"
+
+exit 0

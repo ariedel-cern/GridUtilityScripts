@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 15.10.2021
+# Last Modified Date: 01.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # script for searching through a directory on grind and copying all matching files to local machine
@@ -42,14 +42,14 @@ while [ $Flag -eq 0 ]; do
     # get diff between files on grid and disk and write them to file with the format
     # {Absolute path on grid} {relative locally}
     # so we can pass this file to alien_cp and start N number of jobs
-    diff $FilesOnGrid $FilesOnDisk | awk '$1=="<" {print $2}' | sort -u | xargs -n1 -I{} echo "alien://${GRID_WORKING_DIR_ABS}/{} file://./{}" >$FilesCopy
+    diff $FilesOnGrid $FilesOnDisk | awk '$1=="<" {print $2}' | sort -u | xargs -n1 -I{} echo "alien://${GRID_WORKING_DIR_ABS}/{} file:./{}" >$FilesCopy
 
     # remove files which failed to copy and write all remainig files to a file with the format
-    # diff $FilesDiffGridDisk $FilesFailedCopy | awk '$1=="<" {print $2}' | sort -u | xargs -n1 -I{} echo "alien://${GRID_WORKING_DIR_ABS}/{} file://./{}" >$FilesCopy
+    # diff $FilesDiffGridDisk $FilesFailedCopy | awk '$1=="<" {print $2}' | sort -u | xargs -n1 -I{} echo "alien://${GRID_WORKING_DIR_ABS}/{} file:./{}" >$FilesCopy
 
     # when there are a lot of files, creating the directory seems to be a bottleneck for alien_cp, lets create the directories beforehand
     echo "create local directory structure"
-    awk '{gsub("file://./","",$2);print $2}' $FilesCopy | parallel --bar --progress "mkdir -p {//}"
+    awk '{gsub("file:./","",$2);print $2}' $FilesCopy | parallel --bar --progress "mkdir -p {//}"
 
     echo "# files on grid       : $(wc -l $FilesOnGrid)"
     echo "# files locally       : $(wc -l $FilesOnDisk)"
@@ -66,7 +66,7 @@ while [ $Flag -eq 0 ]; do
 
     echo "Copied all files in this batch. Wait for the next..."
 
-    GridTimeout.sh $TIMEOUT
+    GridTimeout.sh $TIMEOUT_LONG
 done
 
 # cleanup

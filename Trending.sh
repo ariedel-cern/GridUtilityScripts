@@ -2,11 +2,13 @@
 # File              : Trending.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 05.08.2021
-# Last Modified Date: 27.10.2021
+# Last Modified Date: 01.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # aggregate results to show their trend
 
+# source config file
+[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
 # get macro we are wrapping around

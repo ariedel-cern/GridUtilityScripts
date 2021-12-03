@@ -2,7 +2,7 @@
 # File              : GridConfig.sh.template
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 30.11.2021
+# Last Modified Date: 01.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # example configuration for running a analysis on grid
@@ -12,7 +12,8 @@
 [ ! -d ${GRID_UTILITY_SCRIPTS:=$HOME/GridUtilityScripts} ] && echo "Cannot find GRID_UTILITY_SCRIPTS. Bail out..." && return 1
 
 # miscellaneous variables
-export TIMEOUT="300"
+export TIMEOUT_LONG="300"
+export TIMEOUT_SHORT="15"
 export COPY_JOBS="120"
 export MAX_RESUBMIT="3"
 export LIMIT_RUNNING_SUBJOBS="1500"
@@ -70,9 +71,18 @@ export LOCAL_OUTPUT_BOOTSTRAP=$(
 EOF
 )
 
-# define temporary files holding meta data
-export TMP_MASTERJOBS="$LOCAL_TMP_DIR/Masterjobs.tmp"
-export TMP_MASTERJOBS_META="$LOCAL_TMP_DIR/Masterjobs_meta.tmp"
+# log files
+export SUBMIT_LOG="$LOCAL_TMP_DIR/Submit.log"
+# export SUBMIT_LOG-"$LOCAL_TMP_DIR/Submit.log"
+
+export MASTERJOB_ID_R1="$LOCAL_TMP_DIR/MasterjobID_R1.tmp"
+export MASTERJOB_META_R1="$LOCAL_TMP_DIR/MasterjobMeta_R1.tmp"
+
+export MASTERJOB_ID_R2="$LOCAL_TMP_DIR/MasterjobID_R2.tmp"
+export MASTERJOB_META_R2="$LOCAL_TMP_DIR/MasterjobMeta_R2.tmp"
+
+export MASTERJOB_ID_R3="$LOCAL_TMP_DIR/MasterjobID_R3.tmp"
+export MASTERJOB_META_R3="$LOCAL_TMP_DIR/MasterjobMeta_R3.tmp"
 
 # set analysis mode
 # has to be local or grid

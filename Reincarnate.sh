@@ -2,11 +2,13 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 30.11.2021
+# Last Modified Date: 01.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # aggregate xml of all failed jobs and resubmit them in a new masterjob
 
+# source config file
+[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
 source GridConfig.sh
 
 MasterjobID=""
@@ -16,7 +18,17 @@ GridOutputDir=""
 JdlFileName=""
 XmlCollection=""
 
-# loop over done masterjobs and get the id of the failed subjobs
+MasterJobsID=( "$MASTERJOB_ID_R1" "$MASTERJOB_ID_R2" "$MASTERJOB_ID_R3" )
+MasterJobsMeta=( "$MASTERJOB_META_R1" "$MASTERJOB_META_R2" "$MASTERJOB_META_R3" )
+
+for i in ${!MasterJobsID[@]}; do
+
+        [ ! -f ${MasterJobsID[$i]} ] && break
+
+        echo $i
+        echo ${MasterJobsID[$i]}
+        :> ${MasterJobsMeta[$i]}
+
 while read MasterjobMeta; do
 
     MasterjobID=$(awk '{print $1}' <<<$MasterjobMeta)
@@ -29,7 +41,7 @@ while read MasterjobMeta; do
     echo "Reincarnate $MasterjobID corresponding to Run $Run"
 
     # get all failed subjobs
-    SubjobsInError=$(alien_ps -m $MasterjobID | awk '$4~"E"{print $2}' | tr '\n' ',' | sed s'/,$//')
+    SubjobsInError=$(alien_ps -m $MasterjobID | awk '($4~"E" || $4=="XP"){print $2}' | tr '\n' ',' | sed s'/,$//')
 
     # get xml collection of all failed AODs
     curl -L -k --key $HOME/.globus/userkey.pem --cert $HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid) "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=$SubjobsInError" --output "${LOCAL_TMP_DIR}/$XmlCollection"
