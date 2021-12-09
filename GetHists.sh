@@ -2,7 +2,7 @@
 # File              : GetHists.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 15.09.2021
-# Last Modified Date: 16.09.2021
+# Last Modified Date: 03.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # filter out chosen histograms into seperate file

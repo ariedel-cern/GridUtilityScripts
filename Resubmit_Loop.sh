@@ -2,7 +2,7 @@
 # File              : Resubmit_Loop.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 07.09.2021
-# Last Modified Date: 01.12.2021
+# Last Modified Date: 03.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # resubmit jobs in an endless loop

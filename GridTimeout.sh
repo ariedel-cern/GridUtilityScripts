@@ -2,7 +2,7 @@
 # File              : GridTimeout.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 26.08.2021
-# Last Modified Date: 26.08.2021
+# Last Modified Date: 03.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # use this script for waiting for timeout in GridUtilityScripts

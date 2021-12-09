@@ -2,7 +2,7 @@
 # File              : ComputeKinematicWeights.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.09.2021
-# Last Modified Date: 14.09.2021
+# Last Modified Date: 03.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # compute kinematic weights run by run

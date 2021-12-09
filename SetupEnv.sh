@@ -2,7 +2,7 @@
 # File              : SetupEnv.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 23.06.2021
-# Last Modified Date: 06.10.2021
+# Last Modified Date: 03.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 echo 'export $GRID_UTILITY_SCRIPTS'
