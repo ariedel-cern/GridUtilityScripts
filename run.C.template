@@ -2,14 +2,14 @@
  * File              : run.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 06.09.2021
+ * Last Modified Date: 06.12.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
-// Include macros (see
-// https://alice-doc.github.io/alice-analysis-tutorial/analysis/ROOT5-to-6.html):
-//    For this to have an effect, it is assumted that some local AliROOT env is
-//    initialized, so that env variables ALICE_ROOT and ALICE_PHYSICS are set
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <string>
+
 #ifdef __CLING__
 // Tell  ROOT where to find AliRoot and AliPhysics headers:
 R__ADD_INCLUDE_PATH($ALICE_ROOT)
@@ -18,144 +18,118 @@ R__ADD_INCLUDE_PATH($ALICE_PHYSICS)
 #include "OADB/macros/AddTaskPhysicsSelection.C"
 #endif
 
-// local macro configuring the task
-#include "CreateAlienHandler.C"
 #include "AddTask.C"
+#include "CreateAlienHandler.C"
 
 // local function declarations
 void LoadLibraries();
 TChain *CreateAODChain(const char *aDataDir, Int_t aRuns, Int_t offset);
 TChain *CreateESDChain(const char *aDataDir, Int_t aRuns, Int_t offset);
 
-// 2/ The main macro:
-void run(Int_t RunNumber = 137161, Int_t nEvents = 100, Int_t offset = 0) {
-  // Body:
-  // a) Time;
-  // b) Load needed libraries;
-  // c) Make analysis manager;
-  // d) Chains;
-  // e) Connect plug-in to the analysis manager;
-  // f) Event handlers;
-  // g) Task to check the offline trigger: for AODs this is not needed, indeed;
-  // h) Add the centrality determination task;
-  // i) Setup analysis per centrality bin;
-  // j) Enable debug printouts;
-  // k) Run the analysis;
-  // l) Print real and CPU time used for analysis.
+void run(const char *ConfigFileName) {
 
-  // get configuration from the environemnt
-  const char *analysisMode = std::getenv("ANALYSIS_MODE");
-  const char *dataDir = std::getenv("DataDir");
-  Bool_t bRunOverData = kTRUE;
-  if (std::stoi(std::getenv("RUN_OVER_DATA")) == 1) {
-    bRunOverData = kTRUE;
-  } else {
-    bRunOverData = kFALSE;
-  }
-  Bool_t bRunOverAOD = kTRUE;
-  if (std::stoi(std::getenv("RUN_OVER_AOD")) == 1) {
-    bRunOverAOD = kTRUE;
-  } else {
-    bRunOverAOD = kFALSE;
-  }
-
-  // centrality bins
-  // Int_t binfirst = 0; // where do we start numbering bins
-  // Int_t binlast = 0;  // where do we stop numbering bins
-  // const Int_t numberOfCentralityBins = 1;
-  // Float_t centralityArray[numberOfCentralityBins + 1] = {
-  //     0.0, 100.0}; // in centrality percentile
-  std::vector<Int_t> CentralityBins;
-  std::stringstream StreamCenBins(std::getenv("CENTRALITY_BIN_EDGES"));
-  std::string edge;
-  while (StreamCenBins >> edge) {
-    CentralityBins.push_back(std::stoi(edge));
-  }
-
-  // a) Time:
+  // Time
   TStopwatch timer;
   timer.Start();
 
-  // b) Load needed libraries:
+  // load config file
+  std::fstream ConfigFile(ConfigFileName);
+  nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
+
+  // Load needed libraries
   LoadLibraries();
 
-  // c) Make analysis manager:
+  // Make analysis manager
   AliAnalysisManager *mgr = new AliAnalysisManager("FlowAnalysisManager");
 
   // d) Chains:
+  // only need for local analysis
   TChain *chain = NULL;
-  if (TString(analysisMode).EqualTo("local")) {
-    if (bRunOverAOD) {
-      chain = CreateAODChain(dataDir, nEvents, offset);
+  Int_t nEvents = 100;
+  Int_t offset = 0;
+
+  if (std::string("local") ==
+      Jconfig["task"]["AnalysisMode"].get<std::string>()) {
+    if (Jconfig["task"]["RunOverAOD"].get<bool>()) {
+      chain = CreateAODChain(
+          Jconfig["task"]["LocalDataDir"].get<std::string>().c_str(), nEvents,
+          offset);
     } else {
-      chain = CreateESDChain(dataDir, nEvents, offset);
+      chain = CreateESDChain(
+          Jconfig["task"]["LocalDataDir"].get<std::string>().c_str(), nEvents,
+          offset);
     }
   }
 
-  // e) Connect plug-in to the analysis manager:
-  if (TString(analysisMode).EqualTo("grid")) {
-    AliAnalysisGrid *alienHandler = CreateAlienHandler(RunNumber);
+  // Connect plug-in to the analysis manager:
+  if (std::string("grid") ==
+      Jconfig["task"]["AnalysisMode"].get<std::string>()) {
+    AliAnalysisGrid *alienHandler = CreateAlienHandler(ConfigFileName);
     if (!alienHandler) {
       return;
     }
     mgr->SetGridHandler(alienHandler);
   }
 
-  // f) Event handlers:
-  if (bRunOverAOD) {
+  // Event handlers
+  if (Jconfig["task"]["RunOverAOD"].get<bool>()) {
     AliVEventHandler *aodH = new AliAODInputHandler();
     mgr->SetInputEventHandler(aodH);
   } else {
     AliVEventHandler *esdH = new AliESDInputHandler();
     mgr->SetInputEventHandler(esdH);
   }
-  if (!bRunOverData) {
+  if (!Jconfig["task"]["RunOverData"].get<bool>()) {
     AliMCEventHandler *mc = new AliMCEventHandler();
     mgr->SetMCtruthEventHandler(mc);
   }
 
-  // g) Task to check the offline trigger: for AODs this is not needed, indeed
-  if (!bRunOverAOD) {
-    AddTaskPhysicsSelection(!bRunOverData);
+  // Task to check the offline trigger: for AODs this is not needed, indeed
+  if (!Jconfig["task"]["RunOverAOD"].get<bool>()) {
+    AddTaskPhysicsSelection(kTRUE);
   }
 
-  // h) Add the centrality determination task:
+  //  Add the centrality determination task
   AliMultSelectionTask *task = AddTaskMultSelection(kFALSE); // user mode
   task->SetSelectedTriggerClass(
       AliVEvent::kINT7); // set the trigger (kINT7 is minimum bias)
 
-  // i) Setup analysis per centrality bin:
-  for (std::size_t i = 0; i < CentralityBins.size() - 1; i++) {
-    Float_t lowCentralityBinEdge = CentralityBins.at(i);
-    Float_t highCentralityBinEdge = CentralityBins.at(i + 1);
-    Printf("\nWagon for centrality bin %i: %.1f-%.1f", int(i),
-           lowCentralityBinEdge, highCentralityBinEdge);
-    AddTask(lowCentralityBinEdge, highCentralityBinEdge);
+  std::vector<Double_t> CentralityBinEdges =
+      Jconfig["task"]["CentralityBinEdges"].get<std::vector<Double_t>>();
+
+  // Setup analysis per centrality bin
+  for (std::size_t i = 0; i < CentralityBinEdges.size() - 1; i++) {
+    Float_t lowCentralityBinEdge = CentralityBinEdges.at(i);
+    Float_t highCentralityBinEdge = CentralityBinEdges.at(i + 1);
+    std::cout << std::endl
+              << "Wagon for centrality bin (" << i << "/"
+              << CentralityBinEdges.size() - 1 << "): " << lowCentralityBinEdge
+              << "-" << highCentralityBinEdge << std::endl;
+    AddTask(ConfigFileName, lowCentralityBinEdge, highCentralityBinEdge);
   }
 
-  // j) Enable debug printouts:
+  // Enable debug printouts
   mgr->SetDebugLevel(2);
 
-  // k) Run the analysis:
+  // Run the analysis
   if (!mgr->InitAnalysis()) {
     return;
   }
   mgr->PrintStatus();
-  if (TString(analysisMode).EqualTo("local")) {
+  if (std::string("local") ==
+      Jconfig["task"]["AnalysisMode"].get<std::string>()) {
     mgr->StartAnalysis("local", chain);
-  } else if (TString(analysisMode).EqualTo("grid")) {
+  } else if (std::string("grid") ==
+             Jconfig["task"]["AnalysisMode"].get<std::string>()) {
     mgr->StartAnalysis("grid");
   }
 
-  // l) Print real and CPU time used for analysis:
+  // Print real and CPU time used for analysis:
   timer.Stop();
   timer.Print();
 
   return;
-
-} // end of void run(...)
-
-//===============================================================================================
+}
 
 void LoadLibraries() {
   // Load the needed libraries (most of them already loaded by aliroot).

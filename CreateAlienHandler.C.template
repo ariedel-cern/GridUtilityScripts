@@ -2,104 +2,69 @@
  * File              : CreateAlienHandler.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 31.05.2021
- * Last Modified Date: 06.09.2021
+ * Last Modified Date: 06.12.2021
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
-AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <string>
+
+AliAnalysisGrid *CreateAlienHandler(const char *ConfigFileName) {
+
+  // load config file
+  std::fstream ConfigFile(ConfigFileName);
+  nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
+
   // Check if user has a valid token, otherwise make one. This has limitations.
   // One can always follow the standard procedure of calling alien-token-init
   // then source /tmp/gclient_env_$UID in the current shell.
   AliAnalysisAlien *plugin = new AliAnalysisAlien();
 
-  plugin->SetRunMode(std::getenv("GRID_RUN_MODE"));
-  plugin->SetNtestFiles(2); // Relevant only for run mode "test". By default
+  plugin->SetRunMode("offline");
+  plugin->SetNtestFiles(1); // Relevant only for run mode "test". By default
   // 10 files will be copied locally and analysed in "test" mode
 
   // Set versions of used packages
   plugin->SetAPIVersion("V1.1x");
-  plugin->SetAliPhysicsVersion(std::getenv("ALIPHYSICS_TAG"));
+  plugin->SetAliPhysicsVersion(
+      Jconfig["task"]["AnalysisTag"].get<std::string>().c_str());
 
-  Bool_t bRunOverData;
-  if (std::stoi(std::getenv("RUN_OVER_DATA")) == 1) {
-    bRunOverData = kTRUE;
-  } else {
-    bRunOverData = kFALSE;
-  }
-  // Declare input data to be processed - can be done in two ways:
-  // METHOD 1: Create automatically XML collections using alien 'find' command.
-  // ============================================================================
-  //  Example 1: MC production (set in macro runFlowTask.C: bRunOverData =
-  //  kFALSE)
-  if (!bRunOverData) {
-    plugin->SetGridDataDir("/alice/sim/MC_PRODUCTION");
-    plugin->SetDataPattern(
-        "*AliESDs.root"); // The default data pattern, other may be "*tag.root",
-                          // "*ESD.tag.root", etc
-    // const Int_t nMC_Runs = 1;
-    // Int_t runNo[nMC_Runs] = {137161};
-    // for (Int_t r = 0; r < nMC_Runs; r++) {
-    //   plugin->AddRunNumber(runNo[r]);
-    // }
-    // handle runs in GridConfig.sh
-    plugin->AddRunNumber(RunNumber);
-    // plugin->AddRunNumber(119844); // Alternatively use e.g.
-    // plugin->SetRunRange(105044,106044); to add more runs in one go
-  } else {
-    // ============================================================================
-    //  Example 2: Real data (set in macro runFlowTask.C: bRunOverData = kTRUE,
-    //  MCEP = kFALSE)
-    // alien_find works this way: alien_find -x collection -l 10  -o 0
-    // /alice/data/2010/LHC10h/000137161 *ESDs/pass2/AOD160/*AOD.root
-    plugin->SetGridDataDir("/alice/data/2010/LHC10h");
-    // plugin->SetDataPattern("*ESDs/pass2/*ESDs.root"); // running over ESDs
-    plugin->SetDataPattern("*ESDs/pass2/AOD160/*AOD.root"); // running over AODs
+  plugin->SetGridDataDir(
+      Jconfig["task"]["GridDataDir"].get<std::string>().c_str());
+  plugin->SetDataPattern(
+      Jconfig["task"]["DataPattern"].get<std::string>().c_str());
 
+  plugin->AddRunNumber(137161);
+  if (Jconfig["task"]["RunOverData"].get<bool>()) {
     plugin->SetRunPrefix("000"); // IMPORTANT!
     plugin->SetOutputToRunNo();  // IMPORTANT!
-
-    // Int_t runNo[90] = {
-    //     139510, 139507, 139505, 139503, 139465, 139438, 139437, 139360,
-    //     139329, 139328, 139314, 139310, 139309, 139173, 139107, 139105,
-    //     139038, 139037, 139036, 139029, 139028, 138872, 138871, 138870,
-    //     138837, 138732, 138730, 138666, 138662, 138653, 138652, 138638,
-    //     138624, 138621, 138583, 138582, 138578, 138534, 138469, 138442,
-    //     138439, 138438, 138396, 138364, 138275, 138225, 138201, 138197,
-    //     138192, 138190, 137848, 137844, 137752, 137751, 137724, 137722,
-    //     137718, 137704, 137693, 137692, 137691, 137686, 137685, 137639,
-    //     137638, 137608, 137595, 137549, 137546, 137544, 137541, 137539,
-    //     137531, 137530, 137443, 137441, 137440, 137439, 137434, 137432,
-    //     137431, 137430, 137243, 137236, 137235, 137232, 137231, 137230,
-    //     137162, 137161}; // Remark: 137366 and 137135 do NOT have AODs in
-    //     AOD160
-
-    // for (Int_t r = 0; r < 1; r++) {
-    //   plugin->AddRunNumber(runNo[r]);
-    // }
-    plugin->AddRunNumber(RunNumber);
-
-  } // end to else
+  }
 
   // ============================================================================
 
   // METHOD 2: Declare existing data files (raw collections, xml collections,
   // root file) If no path mentioned data is supposed to be in the work
-  // directory (see SetGridWorkingDir()) XML collections added via this method
-  // can be combined with the first method if the content is compatible (using
-  // or not tags)
+  // directory(see SetGridWorkingDir()) XML collections added via this method
+  // can be combined with the first method if the content is compatible
+  // (using or not tags)
   // plugin->AddDataFile("hijingWithoutFlow10000Evts.xml");
   //   plugin->AddDataFile("/alice/data/2008/LHC08c/000057657/raw/Run57657.Merged.RAW.tag.root");
   // plugin->AddDataFile("/alice/cern.ch/user/a/ariedel/weights.root");
   // plugin->AddDataFile("Run137161.RAW.tag.root");
   // plugin->AddDataFile("file:///scratch/ga45can/tmp/aliceAnalysis/MCclosure/"
   //                     "Run137161.RAW.tag.root");
+  //
   plugin->SetCheckCopy(kFALSE);
   // Define alien work directory where all files will be copied. Relative to
   // alien $HOME.
-  plugin->SetGridWorkingDir(std::getenv("GRID_WORKING_DIR_REL"));
+  plugin->SetGridWorkingDir(
+      Jconfig["task"]["GridWorkDir"].get<std::string>().c_str());
   // Declare alien output directory. Relative to working directory.
-  plugin->SetGridOutputDir(std::getenv(
-      "GRID_OUTPUT_DIR_REL")); // In this case will be $HOME/work/output
+  plugin->SetGridOutputDir(
+      Jconfig["task"]["GridOutputDir"]
+          .get<std::string>()
+          .c_str()); // In this case will be $HOME/work/output
   // Declare the analysis source files names separated by blancs. To be compiled
   // runtime using ACLiC on the worker nodes:
   // ... (if this is needed see in official tutorial example how to do it!)
@@ -131,13 +96,14 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // plugin->SetOutputArchive("log_archive.zip:");
   // Optionally set a name for the generated analysis macro (default
   // MyAnalysis.C)
-  plugin->SetAnalysisMacro(std::getenv("ANALYSIS_MACRO_FILE_NAME"));
+  plugin->SetAnalysisMacro(
+      Jconfig["task"]["AnalysisMacro"].get<std::string>().c_str());
   // Optionally set maximum number of input files/subjob (default 100, put 0 to
   // ignore)
   plugin->SetSplitMaxInputFileNumber(
-      std::stoi(std::getenv("INPUT_FILES_PER_SUBJOB")));
+      Jconfig["task"]["FilesPerSubjob"].get<std::vector<Int_t>>().at(0));
   // Optionally set number of runs per masterjob:
-  plugin->SetNrunsPerMaster(std::stoi(std::getenv("RUNS_PER_MASTERJOB")));
+  plugin->SetNrunsPerMaster(1);
   // Optionally set overwrite mode. Will trigger overwriting input data
   // colections AND existing output files:
   plugin->SetOverwriteMode(kTRUE);
@@ -145,14 +111,13 @@ AliAnalysisGrid *CreateAlienHandler(Int_t RunNumber) {
   // sub-jobs.
   // plugin->SetMaxInitFailed(99);
   // Optionally resubmit threshold.
-  plugin->SetMasterResubmitThreshold(
-      std::stoi(std::getenv("MASTER_RESUBMIT_THRESHOLD")));
+  plugin->SetMasterResubmitThreshold(50);
   // Optionally set time to live (default 30000 sec)
-  plugin->SetTTL(std::stoi(std::getenv("TIME_TO_LIVE")));
+  plugin->SetTTL(Jconfig["task"]["TimeToLive"].get<std::vector<Int_t>>().at(0));
   // Optionally set input format (default xml-single)
   plugin->SetInputFormat("xml-single");
   // Optionally modify the name of the generated JDL (default analysis.jdl)
-  plugin->SetJDLName(std::getenv("JDL_FILE_NAME"));
+  plugin->SetJDLName(Jconfig["task"]["Jdl"].get<std::string>().c_str());
   // Optionally modify job price (default 1)
   plugin->SetPrice(1);
   // Optionally modify split mode (default 'se')
