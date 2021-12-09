@@ -2,93 +2,104 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 01.12.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
 
-# source config file
-[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
-source GridConfig.sh
+[ ! -f config.json ] && echo "No config file!!!" && exit 1
 
-# if running locally, call aliroot and run.C macro with default values and bail out
-if [ $ANALYSIS_MODE = "local" ]; then
-    echo "################################################################################"
-    echo "Running locally over $DataDir"
-    echo "with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
-    aliroot -q -l -b run.C
-    echo "################################################################################"
-    exit 0
+# if running locally, just call aliroot and bail out
+if [ "$(jq -r '.task.AnalysisMode' config.json)" = "local" ]; then
+	echo "################################################################################"
+	echo "Running locally over $(jq -r '.task.LocalDataDir' config.json)"
+	aliroot -q -l -b run.C\(\"config.json\"\)
+	echo "################################################################################"
+	exit 0
 fi
 
 echo "################################################################################"
-echo "running on Grid"
+echo "Running on Grid"
 
-# protect against overwriting existing analysis results
-if alien_find "${GRID_WORKING_DIR_ABS}/*" &>/dev/null; then
-    echo "Working directory not empty. Creating backup..."
-    alien_mv ${GRID_WORKING_DIR_ABS} ${GRID_WORKING_DIR_ABS}.bak || exit 1
-fi
+# get variables from config file
+GridWorkDir="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)"
+XmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
+Jdl="$(jq -r '.task.Jdl' config.json)"
+Macro="$(jq -r '.task.AnalysisMacro' config.json)"
 
-echo "################################################################################"
+# create remote and local working directory
+alien_rm -R -f "alien:${GridWorkDir}"
+alien_mkdir -s "alien:${GridWorkDir}"
+
 echo "Run steering macros in offline mode to generate necessary files"
-aliroot -q -l -b run.C 
+aliroot -q -l -b run.C\(\"config.json\"\) || exit 2
 
-echo "################################################################################"
-echo "Modify jdl to use XML collections in $GRID_XML_COLLECTION"
+echo "Modify jdl to use XML collections in ${XmlCollection}"
 # TODO
 # add support for specifing weights run by run
-sed -i -e "s|${GRID_WORKING_DIR_ABS}/\$1,nodownload|${GRID_XML_COLLECTION}/\$1,nodownload|" $JDL_FILE_NAME
+sed -i -e "/nodownload/ s|${GridWorkDir}|${XmlCollection}|" $Jdl
 
-echo "################################################################################"
-echo "Move generate files to $LOCAL_TMP_DIR"
-mv $JDL_FILE_NAME $LOCAL_TMP_DIR
-mv $ANALYSIS_MACRO_FILE_NAME $LOCAL_TMP_DIR
-mv analysis.sh $LOCAL_TMP_DIR
-mv analysis_validation.sh $LOCAL_TMP_DIR
-mv analysis.root $LOCAL_TMP_DIR
-
-echo "################################################################################"
 echo "Copy everything we need to grid"
-alien_cp "file:${LOCAL_TMP_DIR}/${JDL_FILE_NAME}" "alien:${GRID_WORKING_DIR_ABS}/" || exit 2
-alien_cp "file:${LOCAL_TMP_DIR}/${ANALYSIS_MACRO_FILE_NAME}" "alien:${GRID_WORKING_DIR_ABS}/" || exit 2
-alien_cp "file:${LOCAL_TMP_DIR}/analysis.sh" "alien:${GRID_WORKING_DIR_ABS}/" || exit 2
-alien_cp "file:${LOCAL_TMP_DIR}/analysis_validation.sh" "alien:${GRID_WORKING_DIR_ABS}/" || exit 2
-alien_cp "file:${LOCAL_TMP_DIR}/analysis.root" "alien:${GRID_WORKING_DIR_ABS}/" || exit 2
+cat >SubmitCopy <<EOF
+file:${Jdl} alien:${GridWorkDir}/
+file:${Macro} alien:${GridWorkDir}/
+file:analysis.sh alien:${GridWorkDir}/
+file:analysis_validation.sh alien:${GridWorkDir}/
+file:analysis.root alien:${GridWorkDir}/
+EOF
 
-[ -f $MASTERJOB_ID_R1 ] && rm $MASTERJOB_ID_R1
-touch $MASTERJOB_ID_R1
+alien_cp -f -input SubmitCopy || exit 3
 
+echo "################################################################################"
+
+# get more variables from config file
 RunCounter="0"
-NumberOfRuns=$(wc -l <<<$RUN_NUMBER)
-
+JobId=""
+LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
+BaseName="$(jq -r '.task.BaseName' config.json)"
+RunOverData="$(jq -r '.task.RunOverData' config.json)"
+Runs="$(jq -r '.Runs[]' config.json)"
+RunCounter="0"
+NumberOfRuns=$(wc -l <<<$Runs)
+StatusFile="$(jq -r '.StatusFile' config.json)"
+echo "{}" >$StatusFile
+RunStatus="Run.tmp.json"
+TmpSave="Submit.tmp.json"
+LockFile="$(jq -r '.LockFile' config.json)"
 
 # submit jobs run by run
-for Run in $RUN_NUMBER; do
+for Run in $Runs; do
 
-    until CheckQuota.sh; do
-        GridTimeout.sh $TIMEOUT_LONG
-    done
+	until CheckQuota.sh; do
+		GridTimeout.sh $LongTimeout
+	done
 
-    echo "################################################################################"
-    echo "Submit Run $Run with Task $TASK_BASENAME with centrality bin edges $(tr '\n' ' ' <<<$CENTRALITY_BIN_EDGES)"
+	echo "################################################################################"
+	echo "Submit Run $Run with Task $BaseName"
 
-    if [ $RUN_OVER_DATA -eq 1 ];then
-        # submit run over data
-        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "000${Run}.xml" $Run | awk 'FNR==2 {print $NF}' | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" | tee -a $MASTERJOB_ID_R1
-    else
-        # submit run over MC production
-        alien_submit $GRID_WORKING_DIR_ABS/flowAnalysis.jdl "${Run}.xml" $Run | awk 'FNR==2 {print $NF}' | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" | tee -a $MASTERJOB_ID_R1
-    fi
+	if [ $RunOverData == "true" ]; then
+		# submit run over data
+		JobId=$(alien_submit $GridWorkDir/flowAnalysis.jdl "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+	else
+		# submit run over MC production
+		JobId=$(alien_submit $GridWorkDir/flowAnalysis.jdl "${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+	fi
 
-    ((RunCounter++))
-    echo "Submitted $RunCounter/$NumberOfRuns Runs"
-    echo "Wait for Grid to catch up..."
+	((RunCounter++))
+	echo "Submitted $RunCounter/$NumberOfRuns Runs"
 
-    # don wait after last job is submitted
-    if [ $RunCounter -lt $NumberOfRuns ];then
-        GridTimeout.sh $TIMEOUT_SHORT
-    fi
+	# update status file
+	(
+		flock 100
+		jq --arg Run "$Run" --arg JobId "$JobId" '.[$Run]={"Status":"RUNNING","FilesCopied":"NONE","FilesChecked":"NONE","Merged":"NONE", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1}}' $StatusFile | sponge $StatusFile
+	) 100>$LockFile
+
+	# dont wait after last job was submitted
+	if [ $RunCounter -lt $NumberOfRuns ]; then
+		echo "Wait for Grid to catch up..."
+		GridTimeout.sh $ShortTimeout
+	fi
 
 done
 

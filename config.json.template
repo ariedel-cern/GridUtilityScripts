@@ -1,0 +1,38 @@
+{
+  "misc": {
+    "LongTimeout": 300,
+    "ShortTimeout": 15,
+    "CopyJobs": 120,
+    "CopyRetries": 3,
+    "ThresholdActiveSubjob": 1400,
+    "ThresholdRunningTime": 90,
+    "ThresholdCpuCost": 90
+  },
+  "task": {
+    "BaseName": "TEST",
+    "AnalysisName": "TEST",
+    "AnalysisTag": "vAN-20211129_ROOT6-1",
+    "OutputTDirectory": "OutputAnalysis",
+    "AnalysisMode": "local",
+    "RunOverAOD": true,
+    "RunOverData": true,
+    "GridHomeDir": "/alice/cern.ch/user/a/ariedel",
+    "GridWorkDir": "TEST",
+    "GridOutputDir": "output",
+    "GridOutputFile": "AnalysisResults.root",
+    "GridDataDir": "/alice/data/2010/LHC10h",
+    "DataPattern": "*ESDs/pass2/AOD160/*AOD.root",
+    "GridXmlCollection":
+      "/alice/cern.ch/user/a/ariedel/XMLcollections/LHC10h/pass2/AOD/AOD160",
+    "Jdl": "flowAnalysis.jdl",
+    "AnalysisMacro": "flowAnalysis.C",
+    "FilesPerSubjob": [100, 50, 20, 1],
+    "TimeToLive": [28800, 21600, 14400, 7200],
+    "LocalDataDir": "/home/vagrant/data/2010/LHC10h/000137161/ESDs/pass2/AOD160",
+    "LocalOutputFile": "Output.root",
+    "CentralityBinEdges": [0, 5, 10, 20, 30, 40, 50, 60, 70, 80]
+  },
+  "Runs": [137161, 139510, 139507, 139505, 139503, 139465, 139438, 139437],
+  "StatusFile": "STATUS.json",
+  "LockFile": "LOCK"
+}

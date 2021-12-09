@@ -2,70 +2,126 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 01.12.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
-# aggregate xml of all failed jobs and resubmit them in a new masterjob
+# reincarnate failed jobs on grid
 
-# source config file
-[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
-source GridConfig.sh
+[ ! -f config.json ] && echo "No config.json file!!!" && exit 1
+LockFile="$(jq -r '.LockFile' config.json)"
+StatusFile="$(jq -r '.StatusFile' config.json)"
+[ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
-MasterjobID=""
-Run=""
-SubjobsInError=""
-GridOutputDir=""
+Runs="$(jq -r 'keys[]' $StatusFile)"
+
+# loop variables
+Data=""
+Re0=""
+Re1=""
+StatusRe0=""
+SubjobErrorRe0=""
+Indices=""
+LastRe=""
+MasterjobIdRe0=""
+MasterjobIdRe1=""
+GridOutputDirOld=""
+GridOutputDirNew=""
+FailedSubjobs=""
 JdlFileName=""
+GridXmlCollection=""
 XmlCollection=""
+InputFiles=""
+TTL=""
+JobID=""
 
-MasterJobsID=( "$MASTERJOB_ID_R1" "$MASTERJOB_ID_R2" "$MASTERJOB_ID_R3" )
-MasterJobsMeta=( "$MASTERJOB_META_R1" "$MASTERJOB_META_R2" "$MASTERJOB_META_R3" )
+for Run in $Runs; do
 
-for i in ${!MasterJobsID[@]}; do
+	# get data of the run
+	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+	Status="$(jq -r '.Status' <<<$Data)"
 
-        [ ! -f ${MasterJobsID[$i]} ] && break
+	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
+	if [ $Status == "DONE" ]; then
+		break
+	fi
 
-        echo $i
-        echo ${MasterJobsID[$i]}
-        :> ${MasterJobsMeta[$i]}
+	# iterate over reincarnations
+	Indices="$(jq -r 'keys[3:-1]|length' <<<$Data)"
+	Indices="$(($Indices - 1))"
+	LastRe="$(jq -r 'keys[-2]' <<<$Data)"
 
-while read MasterjobMeta; do
+	for Index in $(seq 0 $Indices); do
 
-    MasterjobID=$(awk '{print $1}' <<<$MasterjobMeta)
-    Run=$(awk '{print $2}' <<<$MasterjobMeta)
+		Re0="R${Index}"
+		StatusRe0="$(jq -r --arg Re $Re0 '.[$Re].Status' <<<$Data)"
+		SubjobErrorRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobError' <<<$Data)"
 
-    GridOutputDir="${GRID_OUTPUT_DIR_ABS}/${Run}/reincarnate"
-    JdlFileName="${Run}_Reincarnate_${JDL_FILE_NAME}"
-    XmlCollection="${Run}_Reincarnate.xml"
+		# check if reincarnation is still ongoing
+		if [ ! "$StatusRe0" == "DONE" ]; then
+			break
+		fi
+		# if we passed this check, this means the reincarnation is done
+		# now we have to check if this is the last reincarnation or the
+		# current one ended without any subjob failing, the run is done
+		if [ "$Re0" == "$LastRe" -o "$SubjobErrorRe0" -eq 0 ]; then
+			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+			break
+		fi
+		# if we end up here, this means this is not the last reincarnation,
+		# the current one is done and there are subjob that failed
+		# now we need to check if we already kicked off the next reincarnation
+		Re1="R$((Index + 1))"
+		MasterjobIdRe1="$(jq -r --arg Re $Re1 '.[$Re].MasterjobID' <<<$Data)"
+		# if the next reincarnation is running, the masterjob id will not be -1
+		[ ! $MasterjobIdRe1 -eq -1 ] && break
 
-    echo "Reincarnate $MasterjobID corresponding to Run $Run"
+		# now we can kick off the next reincarnation!
+		GridOutputDirOld="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)/$(jq -r '.task.GridOutputDir' config.json)"
+		GridOutputDirNew="${GridOutputDirOld}/${Run}/${Re1}"
 
-    # get all failed subjobs
-    SubjobsInError=$(alien_ps -m $MasterjobID | awk '($4~"E" || $4=="XP"){print $2}' | tr '\n' ',' | sed s'/,$//')
+		JdlFileName="${Re1}_${Run}_Reincarnate.jdl"
+		XmlCollection="${Re1}_${Run}_Reincarnate.xml"
 
-    # get xml collection of all failed AODs
-    curl -L -k --key $HOME/.globus/userkey.pem --cert $HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid) "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=$SubjobsInError" --output "${LOCAL_TMP_DIR}/$XmlCollection"
+		GridXmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
 
-    # create new working directory on grid
-    alien_mkdir -p $GridOutputDir
+		# get all failed subjobs
+		MasterjobIdRe0="$(jq -r --arg Re $Re0 '.[$Re].MasterjobID' <<<$Data)"
+		FailedSubjobs="$(alien_ps -m $MasterjobIdRe0 | awk ' $4!~"D" { print $2 }' | tr '\n' ',' | sed s'/,$//')"
 
-    # create new jdl file
-    cp $LOCAL_TMP_DIR/$JDL_FILE_NAME $LOCAL_TMP_DIR/$JdlFileName
+		# get xml collection of all failed AODs
+		# check if chers and password are there
+		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
 
-    # adept to reincarnation
-    sed -i -e "s|${GRID_XML_COLLECTION}/\$1,nodownload|${GridOutputDir}/\$1,nodownload|" $LOCAL_TMP_DIR/$JdlFileName
-    sed -i -e "/OutputDir/ s|${GRID_OUTPUT_DIR_ABS}|${GridOutputDir}|" $LOCAL_TMP_DIR/$JdlFileName
-    sed -i -e "/SplitMaxInputFileNumber/ s/50/25/" $LOCAL_TMP_DIR/$JdlFileName
+		# create new working directory on grid
+		alien_mkdir -p "$GridOutputDirNew"
 
-    # upload to grid
-    echo "file:$LOCAL_TMP_DIR/$JdlFileName" "alien:$GridOutputDir"
-    alien_cp "file:$LOCAL_TMP_DIR/$JdlFileName" "alien:${GridOutputDir}/"
-    alien_cp "file:$LOCAL_TMP_DIR/$XmlCollection" "alien:${GridOutputDir}/"
+		# create new jdl file
+		cp "$(jq -r '.task.Jdl' config.json)" "$JdlFileName"
 
-    # submit new masterjob
-    alien_submit "$GridOutputDir/$JdlFileName" "${XmlCollection}" $Run
+		# adept to reincarnation
+		sed -i -e "/nodownload/c    \"LF:${GridOutputDirNew}/\$1,nodownload\"" $JdlFileName
+		sed -i -e "/OutputDir\s=/c OutputDir = \"LF:${GridOutputDirNew}/\$2#alien_counter_03i#\"; " $JdlFileName
+		InputFiles="$(jq -r --argjson I "$((Index + 1))" '.task.FilesPerSubjob[$I]' config.json)"
+		sed -i -e "/SplitMaxInputFileNumber/c SplitMaxInputFileNumber = \"$InputFiles\"; " $JdlFileName
+		TTL="$(jq -r --argjson I "$((Index + 1))" '.task.TimeToLive[$I]' config.json)"
+		sed -i -e "/TTL/c TTL = \"$TTL\"; " $JdlFileName
 
-done <$TMP_MASTERJOBS_META
+		# upload to grid
+		alien_cp "file:$JdlFileName" "alien:${GridOutputDirNew}/"
+		alien_cp "file:$XmlCollection" "alien:${GridOutputDirNew}/"
 
+		# submit new masterjob
+		MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" $Run -json | jq -r '.results[0].jobId')"
+
+		# update status file
+		(
+			flock 100
+			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "$MasterjobIdRe1" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
+		) 100>$LockFile
+
+		break
+	done
+done
 
 exit 0
