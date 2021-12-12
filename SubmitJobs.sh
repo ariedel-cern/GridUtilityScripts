@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -23,7 +23,7 @@ echo "Running on Grid"
 
 # get variables from config file
 GridWorkDir="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)"
-XmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
+GridXmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
 Jdl="$(jq -r '.task.Jdl' config.json)"
 Macro="$(jq -r '.task.AnalysisMacro' config.json)"
 
@@ -34,21 +34,19 @@ alien_mkdir -s "alien:${GridWorkDir}"
 echo "Run steering macros in offline mode to generate necessary files"
 aliroot -q -l -b run.C\(\"config.json\"\) || exit 2
 
-echo "Modify jdl to use XML collections in ${XmlCollection}"
+echo "Modify jdl to use XML collection in ${GridXmlCollection}"
 # TODO
 # add support for specifing weights run by run
-sed -i -e "/nodownload/ s|${GridWorkDir}|${XmlCollection}|" $Jdl
+sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
 
 echo "Copy everything we need to grid"
-cat >SubmitCopy <<EOF
-file:${Jdl} alien:${GridWorkDir}/
-file:${Macro} alien:${GridWorkDir}/
-file:analysis.sh alien:${GridWorkDir}/
-file:analysis_validation.sh alien:${GridWorkDir}/
-file:analysis.root alien:${GridWorkDir}/
-EOF
-
-alien_cp -f -input SubmitCopy || exit 3
+{
+	alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
+	alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
+	alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
+	alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
+	alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
+} || exit 2
 
 echo "################################################################################"
 
@@ -62,10 +60,9 @@ RunOverData="$(jq -r '.task.RunOverData' config.json)"
 Runs="$(jq -r '.Runs[]' config.json)"
 RunCounter="0"
 NumberOfRuns=$(wc -l <<<$Runs)
+NumberAOD=""
 StatusFile="$(jq -r '.StatusFile' config.json)"
 echo "{}" >$StatusFile
-RunStatus="Run.tmp.json"
-TmpSave="Submit.tmp.json"
 LockFile="$(jq -r '.LockFile' config.json)"
 
 # submit jobs run by run
@@ -81,10 +78,14 @@ for Run in $Runs; do
 	if [ $RunOverData == "true" ]; then
 		# submit run over data
 		JobId=$(alien_submit $GridWorkDir/flowAnalysis.jdl "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+		Xml="${GridXmlCollection}/000${Run}.xml"
 	else
 		# submit run over MC production
 		JobId=$(alien_submit $GridWorkDir/flowAnalysis.jdl "${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+		Xml="${GridXmlCollection}/${Run}.xml"
 	fi
+
+	NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
 
 	((RunCounter++))
 	echo "Submitted $RunCounter/$NumberOfRuns Runs"
@@ -92,7 +93,7 @@ for Run in $Runs; do
 	# update status file
 	(
 		flock 100
-		jq --arg Run "$Run" --arg JobId "$JobId" '.[$Run]={"Status":"RUNNING","FilesCopied":"NONE","FilesChecked":"NONE","Merged":"NONE", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1}}' $StatusFile | sponge $StatusFile
+		jq --arg Run "$Run" --arg JobId "$JobId" --arg NumberAOD "$NumberAOD" '.[$Run]={"Status":"RUNNING","AODs":$NumberAOD,"FilesCopied":"0","FilesChecked":"0","Merged":"0", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1}}' $StatusFile | sponge $StatusFile
 	) 100>$LockFile
 
 	# dont wait after last job was submitted

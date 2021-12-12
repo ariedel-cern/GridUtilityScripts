@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 12.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -36,6 +36,9 @@ JobID=""
 
 for Run in $Runs; do
 
+	# check if we can actually reincarnate something
+	[ ! CheckQuota.sh ] && break
+
 	# get data of the run
 	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	Status="$(jq -r '.Status' <<<$Data)"
@@ -46,7 +49,8 @@ for Run in $Runs; do
 	fi
 
 	# iterate over reincarnations
-	Indices="$(jq -r 'keys[3:-1]|length' <<<$Data)"
+
+	Indices="$(jq -r 'keys_unsorted[-4:]|length' <<<$Data)"
 	Indices="$(($Indices - 1))"
 	LastRe="$(jq -r 'keys[-2]' <<<$Data)"
 
@@ -100,7 +104,7 @@ for Run in $Runs; do
 
 		# adept to reincarnation
 		sed -i -e "/nodownload/c    \"LF:${GridOutputDirNew}/\$1,nodownload\"" $JdlFileName
-		sed -i -e "/OutputDir\s=/c OutputDir = \"LF:${GridOutputDirNew}/\$2#alien_counter_03i#\"; " $JdlFileName
+		sed -i -e "/OutputDir\s=/c OutputDir = \"LF:${GridOutputDirNew}/\$2\/#alien_counter_03i#\"; " $JdlFileName
 		InputFiles="$(jq -r --argjson I "$((Index + 1))" '.task.FilesPerSubjob[$I]' config.json)"
 		sed -i -e "/SplitMaxInputFileNumber/c SplitMaxInputFileNumber = \"$InputFiles\"; " $JdlFileName
 		TTL="$(jq -r --argjson I "$((Index + 1))" '.task.TimeToLive[$I]' config.json)"

@@ -10,6 +10,7 @@
 LockFile="$(jq -r '.LockFile' config.json)"
 StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
+cp $StatusFile "${StatusFile}.bak"
 
 Runs="$(jq -r 'keys[]' $StatusFile)"
 
@@ -68,7 +69,7 @@ for Run in $Runs; do
 	fi
 
 	# iterate over reincarnations
-	Reincarnations="$(jq -r 'keys[3:-1][]' <<<$Data)"
+	Reincarnations="$(jq -r 'keys_unsorted[-4:][]' <<<$Data)"
 
 	for Reincarnation in $Reincarnations; do
 

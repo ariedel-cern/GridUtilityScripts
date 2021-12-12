@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 08.12.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -46,31 +46,30 @@ export -f Check_Integrity
 Status=""
 Dir=""
 FilesChecked=""
-FilesCopied=""
+FilesCheckedOld=""
 
 for Run in $Runs; do
 
 	FilesChecked="$(jq -r --arg Run "$Run" '.[$Run].FilesChecked' $StatusFile)"
+	[ -f "${StatusFile}.bak" ] && FilesCheckedOld="$(jq -r --arg Run "$Run" '.[$Run].FilesChecked' "${StatusFile}.bak")"
 
-	if [ "$FilesChecked" == "ALL" ]; then
-		break
+	if [ -z $FilesCheckedOld -o $FilesCheckedOld -eq 0 ]; then
+		FilesCheckedOld="-10"
 	fi
 
-	FilesCopied="$(jq -r --arg Run $Run '.[$Run].FilesCopied' $StatusFile)"
+	if [ ! "$Status" == "DONE" -a "$(($FilesChecked - $FilesCheckedOld))" -lt 5 ]; then
+		continue
+	fi
+
 	Dir="${LocalOutputDir}/${Run}"
 	echo "Checking .root files in $Dir"
 
 	find $Dir -type f -name "*.root" | parallel --progress --bar Check_Integrity {}
 
-	if [ $? -a "$FilesCopied" == "ALL" ]; then
-		Status="ALL"
-	else
-		Status="PARTIAL"
-	fi
-
+	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
 	(
 		flock 100
-		jq --arg Run $Run --arg Status $Status 'setpath([$Run,"FilesChecked"];$Status)' $StatusFile | sponge $StatusFile
+		jq --arg Run $Run --arg FilesChecked $FilesChecked 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
 	) 100>$LockFile
 done
 
