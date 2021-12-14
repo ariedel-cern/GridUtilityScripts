@@ -65,7 +65,8 @@ for Run in $Runs; do
 
 	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
 	if [ $Status == "DONE" ]; then
-		break
+        echo "$Run is DONE!"
+		continue
 	fi
 
 	# iterate over reincarnations
@@ -74,10 +75,16 @@ for Run in $Runs; do
 	for Reincarnation in $Reincarnations; do
 
 		MasterjobID="$(jq -r --arg Re $Reincarnation '.[$Re].MasterjobID' <<<$Data)"
+        echo $MasterjobID
+		[ "$MasterjobID" -eq -1 ] && break
+        # Status="$(jq -r '.Status' <<<$Data)"
+		# [ "$Status" == "DONE" ] && break
 
-		[ $MasterjobID -eq "-1" ] && break
+        echo "Get Data, start ..."
 		GetData
+        echo "Get Data, end ..."
 
+        echo "with Reincarnation $Reincarnation -> $MasterjobID"
 		# update values
 		(
 			flock 100

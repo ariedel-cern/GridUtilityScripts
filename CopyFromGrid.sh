@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # copy files from grid to local machine run by run
@@ -23,21 +23,12 @@ CopyRetries="$(jq -r '.misc.CopyRetries' config.json)"
 Data=""
 Status=""
 FilesCopied=""
-FilesCopiedOld=""
 
 for Run in $Runs; do
 
 	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	Status="$(jq -r '.Status' <<<$Data)"
 	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
-	[ -f "${StatusFile}.bak" ] && FilesCopiedOld="$(jq -r --arg Run "$Run" '.[$Run].FilesCopied' "${StatusFile}.bak")"
-	if [ -z $FilesCopiedOld -o $FilesCopiedOld -eq 0 ]; then
-		FilesCopiedOld="-10"
-	fi
-
-	if [ ! "$Status" == "DONE" -a "$(($FilesCopied - $FilesCopiedOld))" -lt 5 ]; then
-		continue
-	fi
 
 	echo "Copy Files from Run: $Run"
 

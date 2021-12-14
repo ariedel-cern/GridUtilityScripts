@@ -2,16 +2,16 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 03.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
 
-# source config file
-[ ! -f GridConfig.sh ] && echo "No config file!!!" && exit 1
-source GridConfig.sh
+[ ! -f config.json ] && echo "No config file!!!" && exit 1
+StatusFile="$(jq -r '.StatusFile' config.json)"
+[ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
-echo "Merging $GRID_OUTPUT_ROOT_FILE run by run in $GRID_OUTPUT_DIR_REL"
+echo "Merging $(jq '.task.GridOutputFile' config.json) run by run in $(jq '.task.GridOutputDir' config.json)"
 
 MergedFile=""
 
@@ -25,11 +25,11 @@ while read Run; do
     MergedFile="$(basename $Run)_Merged.root"
 
     # merge files using hadd in parallel!!!
-    hadd -f -k -j $(nproc) $MergedFile $(find . -type f -name $GRID_OUTPUT_ROOT_FILE)
+    hadd -f -k -j $(nproc) $MergedFile $(find . -type f -name "$(jq '.task.GridOutputFile' config.json)")
 
     # go back
     popd
 
-done < <(find $GRID_OUTPUT_DIR_REL -maxdepth 1 -mindepth 1 -type d)
+done < <(find "$(jq '.task.GridOutputDir' config.json)" -maxdepth 1 -mindepth 1 -type d)
 
 exit 0

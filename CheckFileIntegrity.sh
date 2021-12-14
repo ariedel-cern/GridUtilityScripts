@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -18,11 +18,21 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 Runs="$(jq -r 'keys[]' $StatusFile)"
 LocalOutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 
+FileLog="CheckedFiles.log"
+if [ ! -f $FileLog ];then
+    :>$FileLog
+fi
+
 # check integrity
 Check_Integrity() {
 
 	# set flag
 	local Flag=0
+
+    # check if file was already checked
+    if grep -Fxq "$1" "$2" ; then
+        return 0
+    fi
 
 	# check file
 	{
@@ -33,10 +43,10 @@ Check_Integrity() {
 
 	# remove file if a check is not passed
 	if [ $Flag -eq 1 ]; then
-		echo "$1 did not pass checks. Remove..."
-		rm $1
 		return 1
 	else
+        # if it passes, print the name
+        echo $1
 		return 0
 	fi
 }
@@ -46,27 +56,16 @@ export -f Check_Integrity
 Status=""
 Dir=""
 FilesChecked=""
-FilesCheckedOld=""
 
 for Run in $Runs; do
-
-	FilesChecked="$(jq -r --arg Run "$Run" '.[$Run].FilesChecked' $StatusFile)"
-	[ -f "${StatusFile}.bak" ] && FilesCheckedOld="$(jq -r --arg Run "$Run" '.[$Run].FilesChecked' "${StatusFile}.bak")"
-
-	if [ -z $FilesCheckedOld -o $FilesCheckedOld -eq 0 ]; then
-		FilesCheckedOld="-10"
-	fi
-
-	if [ ! "$Status" == "DONE" -a "$(($FilesChecked - $FilesCheckedOld))" -lt 5 ]; then
-		continue
-	fi
 
 	Dir="${LocalOutputDir}/${Run}"
 	echo "Checking .root files in $Dir"
 
-	find $Dir -type f -name "*.root" | parallel --progress --bar Check_Integrity {}
+	find $Dir -type f -name "*.root" | parallel --progress --bar Check_Integrity {} $FileLog >>$FileLog
 
 	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
+
 	(
 		flock 100
 		jq --arg Run $Run --arg FilesChecked $FilesChecked 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile

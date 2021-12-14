@@ -2,7 +2,7 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 12.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
@@ -15,24 +15,29 @@ set -o pipefail
 
 # submit jobs to the grid -> 0. Reincarnation
 (
+    echo $BASHPID
 	SubmitJobs.sh
 	echo "ALL RUNS SUBMITTED"
 ) &>"Submit.log" &
 
+GridTimeout.sh 600
+
 # update status of running jobs
 (
+    echo $BASHPID
 	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
 		UpdateStatus.sh
-		GridTimeout.sh $ShortTimeout
+		GridTimeout.sh $LongTimeout
 	done
 
 ) &>"UpdateStatus.log" &
 
 # reincarnate failed jobs
 (
+    echo $BASHPID
 	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
 		Reincarnate.sh
-		GridTimeout.sh $ShortTimeout
+		GridTimeout.sh $LongTimeout
 	done
 
 	echo "REINCARNATION DONE"
@@ -40,6 +45,7 @@ set -o pipefail
 
 # copy file from grid
 (
+    echo $BASHPID
 	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
 		CopyFromGrid.sh
 		CheckFileIntegrity.sh
@@ -48,11 +54,11 @@ set -o pipefail
 	echo "COPY DONE"
 ) &>"Copy.log" &
 
-# merge files run by run
-# (Merge.sh) &>$MERGE_LOG &
-
 echo "Analysis Train still going..."
 wait
+
+# merge files run by run
+# (Merge.sh) &>$MERGE_LOG &
 
 echo "FINISHED"
 

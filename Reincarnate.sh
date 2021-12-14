@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 12.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -37,49 +37,66 @@ JobID=""
 for Run in $Runs; do
 
 	# check if we can actually reincarnate something
-	[ ! CheckQuota.sh ] && break
+	[ ! CheckQuota.sh ] && continue
 
 	# get data of the run
 	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	Status="$(jq -r '.Status' <<<$Data)"
 
+    echo "Reincarnate Run $Run"
+
 	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
 	if [ $Status == "DONE" ]; then
-		break
+        echo "$Run is DONE!"
+		continue
 	fi
 
 	# iterate over reincarnations
-
 	Indices="$(jq -r 'keys_unsorted[-4:]|length' <<<$Data)"
 	Indices="$(($Indices - 1))"
 	LastRe="$(jq -r 'keys[-2]' <<<$Data)"
 
 	for Index in $(seq 0 $Indices); do
 
+
 		Re0="R${Index}"
 		StatusRe0="$(jq -r --arg Re $Re0 '.[$Re].Status' <<<$Data)"
 		SubjobErrorRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobError' <<<$Data)"
 
-		# check if reincarnation is still ongoing
+        echo "Working on Reincarnation $Re0"
+
+		# check if a reincarnation is still ongoing, if so, we have nothing to submit
 		if [ ! "$StatusRe0" == "DONE" ]; then
+            echo "Reincarnation $Re0 still going, break..."
 			break
 		fi
+
 		# if we passed this check, this means the reincarnation is done
 		# now we have to check if this is the last reincarnation or the
 		# current one ended without any subjob failing, the run is done
 		if [ "$Re0" == "$LastRe" -o "$SubjobErrorRe0" -eq 0 ]; then
+            echo "Reincarnation $Re0 either is the last one or has no failed subjobs, Run $Run is DONE!"
 			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			break
 		fi
+
 		# if we end up here, this means this is not the last reincarnation,
 		# the current one is done and there are subjob that failed
 		# now we need to check if we already kicked off the next reincarnation
 		Re1="R$((Index + 1))"
 		MasterjobIdRe1="$(jq -r --arg Re $Re1 '.[$Re].MasterjobID' <<<$Data)"
+		StatusRe1="$(jq -r --arg Re $Re1 '.[$Re].Status' <<<$Data)"
 		# if the next reincarnation is running, the masterjob id will not be -1
-		[ ! $MasterjobIdRe1 -eq -1 ] && break
+        # or it is already done
+
+		if [ "$MasterjobIdRe1" -ne -1 ]; then
+            echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
+            continue
+        fi
 
 		# now we can kick off the next reincarnation!
+        echo "Kick of Reincarnation $Re1 in Run $Run"
+
 		GridOutputDirOld="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)/$(jq -r '.task.GridOutputDir' config.json)"
 		GridOutputDirNew="${GridOutputDirOld}/${Run}/${Re1}"
 
@@ -94,6 +111,7 @@ for Run in $Runs; do
 
 		# get xml collection of all failed AODs
 		# check if chers and password are there
+        echo "Download XML ollection of failed subjobs"
 		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
 
 		# create new working directory on grid
@@ -116,6 +134,8 @@ for Run in $Runs; do
 
 		# submit new masterjob
 		MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" $Run -json | jq -r '.results[0].jobId')"
+
+        echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 
 		# update status file
 		(
