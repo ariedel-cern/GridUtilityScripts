@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 14.12.2021
+# Last Modified Date: 16.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -122,7 +122,7 @@ for Run in $Runs; do
 
 		# adept to reincarnation
 		sed -i -e "/nodownload/c    \"LF:${GridOutputDirNew}/\$1,nodownload\"" $JdlFileName
-		sed -i -e "/OutputDir\s=/c OutputDir = \"LF:${GridOutputDirNew}/\$2\/#alien_counter_03i#\"; " $JdlFileName
+		sed -i -e "/OutputDir\s=/c OutputDir = \"${GridOutputDirNew}/\$2\/#alien_counter_03i#\";" $JdlFileName
 		InputFiles="$(jq -r --argjson I "$((Index + 1))" '.task.FilesPerSubjob[$I]' config.json)"
 		sed -i -e "/SplitMaxInputFileNumber/c SplitMaxInputFileNumber = \"$InputFiles\"; " $JdlFileName
 		TTL="$(jq -r --argjson I "$((Index + 1))" '.task.TimeToLive[$I]' config.json)"

@@ -75,8 +75,8 @@ for Run in $Runs; do
 	for Reincarnation in $Reincarnations; do
 
 		MasterjobID="$(jq -r --arg Re $Reincarnation '.[$Re].MasterjobID' <<<$Data)"
-        echo $MasterjobID
 		[ "$MasterjobID" -eq -1 ] && break
+
         # Status="$(jq -r '.Status' <<<$Data)"
 		# [ "$Status" == "DONE" ] && break
 
