@@ -23,6 +23,7 @@ MasterjobStatus=""
 SubjobTotal=""
 SubjobDone=""
 SubjobActive=""
+SubjobWaiting=""
 SubjobError=""
 
 GetData() {
@@ -36,9 +37,11 @@ GetData() {
 	SubjobDone="$(awk '/DONE:/{print $NF}' <<<$MasterjobData)"
 	SubjobDone="${SubjobDone:=0}"
 
-	local SubjobRunning="$(awk '/RUNNING:/{print $NF}' <<<$MasterjobData)"
-	local SubjobWaiting="$(awk '/WAITING:/{print $NF}' <<<$MasterjobData)"
+	SubjobWaiting="$(awk '/WAITING:/{print $NF}' <<<$MasterjobData)"
 	SubjobWaiting="${SubjobWaiting:=0}"
+
+	local SubjobRunning="$(awk '/RUNNING:/{print $NF}' <<<$MasterjobData)"
+	SubjobRunning="${SubjobRunning:=0}"
 	local SubjobAssigned="$(awk '/ASSIGNED:/{print $NF}' <<<$MasterjobData)"
 	SubjobAssigned="${SubjobAssigned:=0}"
 	local SubjobStarted="$(awk '/STARTED:/{print $NF}' <<<$MasterjobData)"
@@ -46,10 +49,10 @@ GetData() {
 	local SubjobSaving="$(awk '/SAVEING:/{print $NF}' <<<$MasterjobData)"
 	SubjobSaving="${SubjobSaving:=0}"
 
-	SubjobActive="$(($SubjobRunning + $SubjobWaiting + $SubjobAssigned + $SubjobStarted + $SubjobSaving))"
+	SubjobActive="$(($SubjobRunning + $SubjobAssigned + $SubjobStarted + $SubjobSaving))"
 	SubjobActive="${SubjobActive:=0}"
 
-	SubjobError=$(($SubjobTotal - $SubjobDone - $SubjobActive))
+	SubjobError=$(($SubjobTotal - $SubjobDone - $SubjobWaiting - $SubjobActive))
 	SubjobError="${SubjobError:=0}"
 
 }
@@ -91,6 +94,7 @@ for Run in $Runs; do
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Status "$MasterjobStatus" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Total "$SubjobTotal" 'setpath([$Run,$Re,"SubjobTotal"];$Total)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Done "$SubjobDone" 'setpath([$Run,$Re,"SubjobDone"];$Done)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Waiting "$SubjobWaiting" 'setpath([$Run,$Re,"SubjobWaiting"];$Waiting)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Active "$SubjobActive" 'setpath([$Run,$Re,"SubjobActive"];$Active)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Error "$SubjobError" 'setpath([$Run,$Re,"SubjobError"];$Error)' $StatusFile | sponge $StatusFile
 		) 100>$LockFile

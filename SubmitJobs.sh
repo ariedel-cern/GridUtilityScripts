@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 16.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -93,7 +93,7 @@ for Run in $Runs; do
 	# update status file
 	(
 		flock 100
-		jq --arg Run "$Run" --arg JobId "$JobId" --arg NumberAOD "$NumberAOD" '.[$Run]={"Status":"RUNNING","AODs":$NumberAOD,"FilesCopied":"0","FilesChecked":"0","Merged":"0", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobError":-1}}' $StatusFile | sponge $StatusFile
+		jq --arg Run "$Run" --arg JobId "$JobId" --arg NumberAOD "$NumberAOD" '.[$Run]={"Status":"RUNNING","FilesCopied":0,"FilesChecked":0,"Merged":0, "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":$NumberAOD,"AODError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1}}' $StatusFile | sponge $StatusFile
 	) 100>$LockFile
 
 	# dont wait after last job was submitted

@@ -2,7 +2,7 @@
 # File              : CheckQuota.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 20.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check if we can submit another masterjob to grid
@@ -22,9 +22,7 @@ MasterjobsInError="0"
 
 GetQuota() {
 	# fill global variables
-	local RunningSubjobs=$(alien_ps -X | wc -l)
-	local WaitingSubjobs=$(alien_ps -W | wc -l)
-	ActiveSubjobs=$(($RunningSubjobs + $WaitingSubjobs))
+	ActiveSubjobs=$(alien_ps -X | wc -l)
     RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$(NF-1));print int($(NF-1))}')
     CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$(NF-1));print int($(NF-1))}')
 	MasterjobsNotReady=$(alien_ps -M -W | wc -l)
@@ -57,8 +55,6 @@ echo "Checking quotas passed, checking status of other masterjobs"
 echo "################################################################################"
 
 echo "$MasterjobsNotReady masterjobs are not running yet"
-echo "$MasterjobsInError masterjobs are in error state"
-
 if [ $MasterjobsNotReady -gt 0 ]; then
 	echo "Another Masterjob is not running yet, wait ...."
 	echo "################################################################################"

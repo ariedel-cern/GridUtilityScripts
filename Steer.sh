@@ -2,41 +2,37 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 14.12.2021
+# Last Modified Date: 20.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
 
 [ ! -f config.json ] && echo "No config file!!!" && exit 1
-ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
-LongTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
+StatusFile="$(jq -r '.StatusFile' config.json)"
 
 set -o pipefail
 
 # submit jobs to the grid -> 0. Reincarnation
+# (
+#     echo $BASHPID
+# 	SubmitJobs.sh
+# 	echo "ALL RUNS SUBMITTED"
+# ) &>"Submit.log" &
+
+# wait for the first run to be submitted
+
+until grep -q "RUNNING" $StatusFile; do
+    LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+    GridTimeout.sh $LongTimeout
+done
+
+# update status of running jobs and reincarnate them if necessary
 (
     echo $BASHPID
-	SubmitJobs.sh
-	echo "ALL RUNS SUBMITTED"
-) &>"Submit.log" &
-
-GridTimeout.sh 600
-
-# update status of running jobs
-(
-    echo $BASHPID
-	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
+	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		UpdateStatus.sh
-		GridTimeout.sh $LongTimeout
-	done
-
-) &>"UpdateStatus.log" &
-
-# reincarnate failed jobs
-(
-    echo $BASHPID
-	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
 		Reincarnate.sh
+        LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 		GridTimeout.sh $LongTimeout
 	done
 
@@ -46,9 +42,10 @@ GridTimeout.sh 600
 # copy file from grid
 (
     echo $BASHPID
-	while jq '.[].Status' STATUS.json | grep "RUNNING" -q; do
+	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		CopyFromGrid.sh
 		CheckFileIntegrity.sh
+        LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 		GridTimeout.sh $LongTimeout
 	done
 	echo "COPY DONE"
