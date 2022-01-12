@@ -19,8 +19,8 @@ Runs="$(jq -r 'keys[]' $StatusFile)"
 LocalOutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 
 FileLog="CheckedFiles.log"
-if [ ! -f $FileLog ];then
-    :>$FileLog
+if [ ! -f $FileLog ]; then
+	: >$FileLog
 fi
 
 # check integrity
@@ -29,13 +29,13 @@ Check_Integrity() {
 	# set flag
 	local Flag=0
 
-    # check if file was already checked
-    if grep -Fxq "$1" "$2" ; then
-        return 0
-    fi
+	# check if file was already checked
+	if grep -Fxq "$1" "$2"; then
+		return 0
+	fi
 
 	# check file
-    local Timeout=10
+	local Timeout=10
 	{
 		timeout $Timeout file -E $1 || Flag=1
 		timeout $Timeout rootls $1 || Flag=1
@@ -46,8 +46,8 @@ Check_Integrity() {
 	if [ $Flag -eq 1 ]; then
 		return 1
 	else
-        # if it passes, print the name
-        echo $1
+		# if it passes, print the name
+		echo $1
 		return 0
 	fi
 }

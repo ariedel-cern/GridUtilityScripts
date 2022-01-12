@@ -17,19 +17,19 @@ MergedFile=""
 OutputFile="$(jq -r '.task.GridOutputFile' config.json)"
 
 while read Run; do
-    echo "Start merging run $(basename $Run) in $(dirname $Run)"
+	echo "Start merging run $(basename $Run) in $(dirname $Run)"
 
-    # go into subdirectory
-    pushd $Run
+	# go into subdirectory
+	pushd $Run
 
-    # construct filename for merged file
-    MergedFile="$(basename $Run)_Merged.root"
+	# construct filename for merged file
+	MergedFile="$(basename $Run)_Merged.root"
 
-    # merge files using hadd in parallel!!!
-    hadd -f -k -j $(nproc) $MergedFile $(find . -type f -name "$OutputFile")
+	# merge files using hadd in parallel!!!
+	hadd -f -k -j $(nproc) $MergedFile $(find . -type f -name "$OutputFile")
 
-    # go back
-    popd
+	# go back
+	popd
 
 done < <(find "$(jq -r '.task.GridOutputDir' config.json)" -maxdepth 1 -mindepth 1 -type d)
 

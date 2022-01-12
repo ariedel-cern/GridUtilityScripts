@@ -11,19 +11,19 @@ source GridConfig.sh
 
 # get macro we are wrapping around
 if [ -f "$GRID_UTILITY_SCRIPTS/Bootstrap.C" ]; then
-    BootstrapMacro="$(realpath $GRID_UTILITY_SCRIPTS/Bootstrap.C)"
+	BootstrapMacro="$(realpath $GRID_UTILITY_SCRIPTS/Bootstrap.C)"
 else
-    echo "No macro found for merging..."
-    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
-    exit 2
+	echo "No macro found for merging..."
+	echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+	exit 2
 fi
 
 if [ -f "$GRID_UTILITY_SCRIPTS/Subsamples.C" ]; then
-    SubsamplesMacro="$(realpath $GRID_UTILITY_SCRIPTS/Subsamples.C)"
+	SubsamplesMacro="$(realpath $GRID_UTILITY_SCRIPTS/Subsamples.C)"
 else
-    echo "No macro found for merging..."
-    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
-    exit 2
+	echo "No macro found for merging..."
+	echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+	exit 2
 fi
 
 # devide runs into chunks with approximately the same number of events
@@ -31,17 +31,17 @@ fi
 Subsamples="Subsamples.txt"
 
 if [ ! -f $LOCAL_SUBSAMPLES_FILE ]; then
-    Files="ReTerminated.txt"
-    find $GRID_OUTPUT_DIR_REL -type f -name "*ReTerminated.root" >$Files
-    aliroot -q -l -b $SubsamplesMacro\(\"$Files\",\"$LOCAL_SUBSAMPLES_FILE\"\)
+	Files="ReTerminated.txt"
+	find $GRID_OUTPUT_DIR_REL -type f -name "*ReTerminated.root" >$Files
+	aliroot -q -l -b $SubsamplesMacro\(\"$Files\",\"$LOCAL_SUBSAMPLES_FILE\"\)
 fi
 
 # clean up
 rm $LOCAL_OUTPUT_BOOTSTRAP_FILE 2>/dev/null
 
 for Bootstrap in $LOCAL_OUTPUT_BOOTSTRAP; do
-    echo "Bootstrap $Bootstrap"
-    aliroot -q -l -b $BootstrapMacro\(\"$LOCAL_SUBSAMPLES_FILE\",\"$Bootstrap\"\)
+	echo "Bootstrap $Bootstrap"
+	aliroot -q -l -b $BootstrapMacro\(\"$LOCAL_SUBSAMPLES_FILE\",\"$Bootstrap\"\)
 done
 
 exit 0

@@ -9,9 +9,9 @@
 
 time=$(($1 - 1))
 while [ $time -ge 0 ]; do
-    echo -ne "Waiting: $time\033[0K\r"
-    sleep 1
-    ((time--))
+	echo -ne "Waiting: $time\033[0K\r"
+	sleep 1
+	((time--))
 done
 echo
 

@@ -45,11 +45,11 @@ for Run in $Runs; do
 	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	Status="$(jq -r '.Status' <<<$Data)"
 
-    echo "Reincarnate Run $Run"
+	echo "Reincarnate Run $Run"
 
 	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
 	if [ "$Status" == "DONE" ]; then
-        echo "$Run is DONE!"
+		echo "$Run is DONE!"
 		continue
 	fi
 
@@ -60,49 +60,48 @@ for Run in $Runs; do
 
 	for Index in $(seq 0 $Indices); do
 
-
 		Re0="R${Index}"
 		StatusRe0="$(jq -r --arg Re $Re0 '.[$Re].Status' <<<$Data)"
 		SubjobActiveRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobActive' <<<$Data)"
 		SubjobWaitingRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobWaiting' <<<$Data)"
 		SubjobErrorRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobError' <<<$Data)"
 
-        echo "Working on Reincarnation $Re0"
+		echo "Working on Reincarnation $Re0"
 
 		# check if a reincarnation is still ongoing
 		if [ ! "$StatusRe0" == "DONE" ]; then
-            # now check if there are jobs running
-            if [ "$SubjobActiveRe0" -ne 0 ];then
-                    # if there are, we do not need to reincarnate 
-                    echo "Reincarnation $Re0 still going, break..."
-                    break
-            fi
+			# now check if there are jobs running
+			if [ "$SubjobActiveRe0" -ne 0 ]; then
+				# if there are, we do not need to reincarnate
+				echo "Reincarnation $Re0 still going, break..."
+				break
+			fi
 
-            # now check the number of waiting subjobs
-            # if there are only a few, we can reincarnate
-            if [ "$SubjobWaitingRe0" -gt "$(jq '.misc.ThresholdReincarnateWaitingJobs' config.json)" ];then
-                    echo "Reincarnation $Re0 still has a few jobs in the queue, break ..."
-                    break
-            fi
+			# now check the number of waiting subjobs
+			# if there are only a few, we can reincarnate
+			if [ "$SubjobWaitingRe0" -gt "$(jq '.misc.ThresholdReincarnateWaitingJobs' config.json)" ]; then
+				echo "Reincarnation $Re0 still has a few jobs in the queue, break ..."
+				break
+			fi
 
 		fi
 		# if we passed this check, this means the reincarnation is done
 
 		# check if this is the last reincarnation
-        if [ "$Re0" == "$LastRe" ];then
-            echo "Last Reincarnation $Re0,  Run $Run is DONE!"
+		if [ "$Re0" == "$LastRe" ]; then
+			echo "Last Reincarnation $Re0,  Run $Run is DONE!"
 			jq --arg Run "$Run" --arg Re "$Re0" --arg Error "$SubjobErrorRe0" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			break
 		fi
 
 		# check if the reincarnation finished without a subjob in error
-        if [ "$SubjobErrorRe0" -eq 0 ]; then
-            echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
+		if [ "$SubjobErrorRe0" -eq 0 ]; then
+			echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
 			jq --arg Run "$Run" --arg Re "$Re0" --arg Zero "0" 'setpath([$Run,$Re,"AODError"];$Zero)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			break
-        fi
+		fi
 
 		# if we end up here, this means this is not the last reincarnation,
 		# the current one is done and there are subjob that failed
@@ -111,15 +110,15 @@ for Run in $Runs; do
 		MasterjobIdRe1="$(jq -r --arg Re $Re1 '.[$Re].MasterjobID' <<<$Data)"
 		StatusRe1="$(jq -r --arg Re $Re1 '.[$Re].Status' <<<$Data)"
 		# if the next reincarnation is running, the masterjob id will not be -1
-        # or it is already done
+		# or it is already done
 
 		if [ "$MasterjobIdRe1" -ne -1 ]; then
-            echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
-            continue
-        fi
+			echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
+			continue
+		fi
 
 		# now we can kick off the next reincarnation!
-        echo "Kick of Reincarnation $Re1 in Run $Run"
+		echo "Kick of Reincarnation $Re1 in Run $Run"
 
 		GridOutputDirOld="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)/$(jq -r '.task.GridOutputDir' config.json)"
 		GridOutputDirNew="${GridOutputDirOld}/${Run}/${Re1}"
@@ -135,13 +134,13 @@ for Run in $Runs; do
 
 		# get xml collection of all failed AODs
 		# TODO check if certs and password are there
-        echo "Download XML collection of failed subjobs"
+		echo "Download XML collection of failed subjobs"
 		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
 
-        # get number of AODs which failed in this reincarnation
-	    FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
+		# get number of AODs which failed in this reincarnation
+		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
 
-        # kill waiting jobs
+		# kill waiting jobs
 		alien_ps -m $MasterjobIdRe0 | awk ' $4=="W" { print $2 }' | parallel --bar --progress "alien.py kill {}"
 
 		# create new working directory on grid
@@ -165,16 +164,16 @@ for Run in $Runs; do
 		# submit new masterjob
 		MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" $Run -json | jq -r '.results[0].jobId')"
 
-        echo "Submitted new Masterjob with ID $MasterjobIdRe1"
+		echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 
 		# update status file
 		(
 			flock 100
 			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "$MasterjobIdRe1" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
-            jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
-            jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
-            jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
 		) 100>$LockFile
 
 		break

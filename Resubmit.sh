@@ -12,21 +12,21 @@
 source GridConfig.sh
 
 Resubmit() {
-    # resubmit jobs in error state or kill them if they reached the threshold
-    # $1 is expected to be the job ID
+	# resubmit jobs in error state or kill them if they reached the threshold
+	# $1 is expected to be the job ID
 
-    # count how often the job finished in some error state
-    local NumberOfFailures=$(alien_ps -trace $1 | grep "The job finished on the worker node with status ERROR_" | wc -l)
+	# count how often the job finished in some error state
+	local NumberOfFailures=$(alien_ps -trace $1 | grep "The job finished on the worker node with status ERROR_" | wc -l)
 
-    if [ $NumberOfFailures -gt $MAX_RESUBMIT ]; then
-        alien.py kill $1
-    else
-        # cleanup output directory before resubmitting
-        alien_rm -rf $(alien_ps -jdl $1 | awk '$1=="OutputDir" {gsub(";","",$3);gsub("\"","",$3);print $3}') &>/dev/null
-        alien.py resubmit $1
-    fi
+	if [ $NumberOfFailures -gt $MAX_RESUBMIT ]; then
+		alien.py kill $1
+	else
+		# cleanup output directory before resubmitting
+		alien_rm -rf $(alien_ps -jdl $1 | awk '$1=="OutputDir" {gsub(";","",$3);gsub("\"","",$3);print $3}') &>/dev/null
+		alien.py resubmit $1
+	fi
 
-    return 0
+	return 0
 }
 export -f Resubmit
 

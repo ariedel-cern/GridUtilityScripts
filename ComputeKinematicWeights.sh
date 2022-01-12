@@ -13,11 +13,11 @@ source GridConfig.sh
 
 # get macro we are wrapping around
 if [ -f "$GRID_UTILITY_SCRIPTS/ComputeKinematicWeights.C" ]; then
-    ComputeWeightsMacro="$(realpath $GRID_UTILITY_SCRIPTS/ComputeKinematicWeights.C)"
+	ComputeWeightsMacro="$(realpath $GRID_UTILITY_SCRIPTS/ComputeKinematicWeights.C)"
 else
-    echo "No macro found for computing kinematic weights..."
-    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
-    exit 2
+	echo "No macro found for computing kinematic weights..."
+	echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+	exit 2
 fi
 
 echo "Compute weights run by run in $GRID_OUTPUT_DIR_REL"

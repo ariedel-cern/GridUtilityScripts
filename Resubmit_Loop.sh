@@ -16,8 +16,8 @@ trap 'echo && echo "Stopping the loop" && Flag=1' SIGINT
 Flag="0"
 
 while [ $Flag -eq "0" ]; do
-    Resubmit.sh
-    GridTimeout.sh $TIMEOUT_LONG
+	Resubmit.sh
+	GridTimeout.sh $TIMEOUT_LONG
 done
 
 exit 0

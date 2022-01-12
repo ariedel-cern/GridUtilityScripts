@@ -13,11 +13,11 @@ source GridConfig.sh
 
 # get macro we are wrapping around
 if [ -f "$GRID_UTILITY_SCRIPTS/ReTerminate.C" ]; then
-    ReTerminateMacro="$(realpath $GRID_UTILITY_SCRIPTS/ReTerminate.C)"
+	ReTerminateMacro="$(realpath $GRID_UTILITY_SCRIPTS/ReTerminate.C)"
 else
-    echo "No macro found for merging..."
-    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
-    exit 2
+	echo "No macro found for merging..."
+	echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+	exit 2
 fi
 
 echo "Reterminate merged files in $GRID_OUTPUT_DIR_REL"

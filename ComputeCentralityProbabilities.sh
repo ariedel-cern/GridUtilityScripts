@@ -13,11 +13,11 @@ source GridConfig.sh
 
 # get macro we are wrapping around
 if [ -f "$GRID_UTILITY_SCRIPTS/ComputeCentralityProbabilities.C" ]; then
-    ComputeProbabilitiesMacro="$(realpath $GRID_UTILITY_SCRIPTS/ComputeCentralityProbabilities.C)"
+	ComputeProbabilitiesMacro="$(realpath $GRID_UTILITY_SCRIPTS/ComputeCentralityProbabilities.C)"
 else
-    echo "No macro found for computing centrality probabilities..."
-    echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
-    exit 2
+	echo "No macro found for computing centrality probabilities..."
+	echo 'Did you set $GRID_UTILITY_SCRIPTS properly?'
+	exit 2
 fi
 
 echo "Compute probabilities run by run in $GRID_OUTPUT_DIR_REL"

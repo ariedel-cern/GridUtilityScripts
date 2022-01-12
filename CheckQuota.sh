@@ -23,8 +23,8 @@ MasterjobsInError="0"
 GetQuota() {
 	# fill global variables
 	ActiveSubjobs=$(alien_ps -X | wc -l)
-    RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$(NF-1));print int($(NF-1))}')
-    CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$(NF-1));print int($(NF-1))}')
+	RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$(NF-1));print int($(NF-1))}')
+	CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$(NF-1));print int($(NF-1))}')
 	MasterjobsNotReady=$(alien_ps -M -W | wc -l)
 	MasterjobsInError=$(alien_ps -M -E | wc -l)
 	return 0

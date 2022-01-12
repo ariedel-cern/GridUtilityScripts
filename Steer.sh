@@ -22,17 +22,17 @@ set -o pipefail
 # wait for the first run to be submitted
 
 until grep -q "RUNNING" $StatusFile; do
-    LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
-    GridTimeout.sh $LongTimeout
+	LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+	GridTimeout.sh $LongTimeout
 done
 
 # update status of running jobs and reincarnate them if necessary
 (
-    echo $BASHPID
+	echo $BASHPID
 	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		UpdateStatus.sh
 		Reincarnate.sh
-        LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+		LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 		GridTimeout.sh $LongTimeout
 	done
 
@@ -41,11 +41,11 @@ done
 
 # copy file from grid
 (
-    echo $BASHPID
+	echo $BASHPID
 	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		CopyFromGrid.sh
 		CheckFileIntegrity.sh
-        LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+		LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 		GridTimeout.sh $LongTimeout
 	done
 	echo "COPY DONE"
