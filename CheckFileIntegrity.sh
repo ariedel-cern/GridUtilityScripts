@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 14.12.2021
+# Last Modified Date: 20.12.2021
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -35,9 +35,10 @@ Check_Integrity() {
     fi
 
 	# check file
+    local Timeout=10
 	{
-		file -E $1 || Flag=1
-		rootls $1 || Flag=1
+		timeout $Timeout file -E $1 || Flag=1
+		timeout $Timeout rootls $1 || Flag=1
 		# ADD MORE CHECKS
 	} &>/dev/null
 
