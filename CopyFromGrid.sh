@@ -14,8 +14,8 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 
 # get variables from config file
 {
-        flock 100
-        Runs="$(jq -r 'keys[]' $StatusFile)"
+	flock 100
+	Runs="$(jq -r 'keys[]' $StatusFile)"
 } 100>$LockFile
 LocalOutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 GridOutputDir="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)/$LocalOutputDir"
@@ -29,10 +29,10 @@ FilesCopied=""
 
 for Run in $Runs; do
 
-    {
-        flock 100
-	    Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
-    } 100>$LockFile
+	{
+		flock 100
+		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+	} 100>$LockFile
 
 	Status="$(jq -r '.Status' <<<$Data)"
 	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
@@ -43,10 +43,10 @@ for Run in $Runs; do
 
 	FilesCopied=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
 
-    { 
-            flock 100
-            jq --arg Run "$Run" --arg FilesCopied "$FilesCopied" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
-    } 100>$LockFile
+	{
+		flock 100
+		jq --arg Run "$Run" --arg FilesCopied "$FilesCopied" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
+	} 100>$LockFile
 
 done
 

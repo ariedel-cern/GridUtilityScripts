@@ -16,8 +16,8 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 
 # get variables from config file
 {
-    flock 100
-    Runs="$(jq -r 'keys[]' $StatusFile)"
+	flock 100
+	Runs="$(jq -r 'keys[]' $StatusFile)"
 } 100>$LockFile
 LocalOutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 
@@ -70,10 +70,10 @@ for Run in $Runs; do
 
 	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
 
-    {
-       flock 100
-       jq --arg Run $Run --arg FilesChecked $FilesChecked 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
-    } 100>$LockFile
+	{
+		flock 100
+		jq --arg Run $Run --arg FilesChecked $FilesChecked 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
+	} 100>$LockFile
 done
 
 exit 0
