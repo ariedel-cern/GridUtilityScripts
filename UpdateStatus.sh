@@ -10,9 +10,13 @@
 LockFile="$(jq -r '.LockFile' config.json)"
 StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
-cp $StatusFile "${StatusFile}.bak"
 
-Runs="$(jq -r 'keys[]' $StatusFile)"
+Runs=""
+{
+    flock 100
+    cp $StatusFile "${StatusFile}.bak"
+    Runs="$(jq -r 'keys[]' $StatusFile)"
+} 100>$LockFile
 
 Data=""
 Status=""
@@ -62,7 +66,10 @@ for Run in $Runs; do
 	echo "Update Run: $Run"
 
 	# get data of the run
-	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    {
+        flock 100
+	    Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    } 100>$LockFile
 
 	Status="$(jq -r '.Status' <<<$Data)"
 
@@ -83,21 +90,18 @@ for Run in $Runs; do
 		# Status="$(jq -r '.Status' <<<$Data)"
 		# [ "$Status" == "DONE" ] && break
 
-		echo "Get Data, start ..."
 		GetData
-		echo "Get Data, end ..."
 
 		echo "with Reincarnation $Reincarnation -> $MasterjobID"
 		# update values
-		(
-			flock 100
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Status "$MasterjobStatus" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Total "$SubjobTotal" 'setpath([$Run,$Re,"SubjobTotal"];$Total)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Done "$SubjobDone" 'setpath([$Run,$Re,"SubjobDone"];$Done)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Waiting "$SubjobWaiting" 'setpath([$Run,$Re,"SubjobWaiting"];$Waiting)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Active "$SubjobActive" 'setpath([$Run,$Re,"SubjobActive"];$Active)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Error "$SubjobError" 'setpath([$Run,$Re,"SubjobError"];$Error)' $StatusFile | sponge $StatusFile
-		) 100>$LockFile
+        { flock 100
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Status "$MasterjobStatus" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Total "$SubjobTotal" 'setpath([$Run,$Re,"SubjobTotal"];$Total)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Done "$SubjobDone" 'setpath([$Run,$Re,"SubjobDone"];$Done)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Waiting "$SubjobWaiting" 'setpath([$Run,$Re,"SubjobWaiting"];$Waiting)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Active "$SubjobActive" 'setpath([$Run,$Re,"SubjobActive"];$Active)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Error "$SubjobError" 'setpath([$Run,$Re,"SubjobError"];$Error)' $StatusFile | sponge $StatusFile
+        } 100>$LockFile
 
 	done
 

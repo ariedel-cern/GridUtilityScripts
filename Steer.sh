@@ -2,29 +2,32 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 20.12.2021
+# Last Modified Date: 13.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
 
 [ ! -f config.json ] && echo "No config file!!!" && exit 1
 StatusFile="$(jq -r '.StatusFile' config.json)"
+touch $StatusFile
 
 set -o pipefail
 
 # submit jobs to the grid -> 0. Reincarnation
-# (
-#     echo $BASHPID
-# 	SubmitJobs.sh
-# 	echo "ALL RUNS SUBMITTED"
-# ) &>"Submit.log" &
+(
+    echo $BASHPID
+	SubmitJobs.sh
+	echo "ALL RUNS SUBMITTED"
+) &>"Submit.log" &
 
-# wait for the first run to be submitted
+echo "Wait for the first run to be submitted..."
 
 until grep -q "RUNNING" $StatusFile; do
 	LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 	GridTimeout.sh $LongTimeout
 done
+
+echo "First run was submitted, start background jobs..."
 
 # update status of running jobs and reincarnate them if necessary
 (
@@ -55,7 +58,7 @@ echo "Analysis Train still going..."
 wait
 
 # merge files run by run
-# (Merge.sh) &>$MERGE_LOG &
+# Merge.sh &>$MERGE_LOG
 
 echo "FINISHED"
 

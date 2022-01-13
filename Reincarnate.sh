@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 21.12.2021
+# Last Modified Date: 13.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -12,7 +12,10 @@ LockFile="$(jq -r '.LockFile' config.json)"
 StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
-Runs="$(jq -r 'keys[]' $StatusFile)"
+{
+        flock 100
+        Runs="$(jq -r 'keys[]' $StatusFile)"
+} 100>$LockFile
 
 # loop variables
 Data=""
@@ -42,7 +45,10 @@ for Run in $Runs; do
 	[ ! CheckQuota.sh ] && continue
 
 	# get data of the run
-	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    {
+        flock 100
+	    Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    } 100>$LockFile
 	Status="$(jq -r '.Status' <<<$Data)"
 
 	echo "Reincarnate Run $Run"
@@ -89,19 +95,25 @@ for Run in $Runs; do
 
 		# check if this is the last reincarnation
 		if [ "$Re0" == "$LastRe" ]; then
-			echo "Last Reincarnation $Re0,  Run $Run is DONE!"
-			jq --arg Run "$Run" --arg Re "$Re0" --arg Error "$SubjobErrorRe0" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+			echo "Last Reincarnation $Re0, Run $Run is DONE!"
+            {
+                flock 100
+                jq --arg Run "$Run" --arg Re "$Re0" --arg Error "$SubjobErrorRe0" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+            } 100>$LockFile
 			break
-		fi
+        fi
 
 		# check if the reincarnation finished without a subjob in error
 		if [ "$SubjobErrorRe0" -eq 0 ]; then
 			echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
-			jq --arg Run "$Run" --arg Re "$Re0" --arg Zero "0" 'setpath([$Run,$Re,"AODError"];$Zero)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+            {
+                flock 100
+			    jq --arg Run "$Run" --arg Re "$Re0" --arg Zero "0" 'setpath([$Run,$Re,"AODError"];$Zero)' $StatusFile | sponge $StatusFile
+			    jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+            } 100>$LockFile
 			break
-		fi
+        fi
 
 		# if we end up here, this means this is not the last reincarnation,
 		# the current one is done and there are subjob that failed
@@ -167,14 +179,13 @@ for Run in $Runs; do
 		echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 
 		# update status file
-		(
-			flock 100
-			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "$MasterjobIdRe1" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
-		) 100>$LockFile
+        { flock 100
+                jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Re1" --arg ID "$MasterjobIdRe1" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
+                jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
+        } 100>$LockFile
 
 		break
 	done

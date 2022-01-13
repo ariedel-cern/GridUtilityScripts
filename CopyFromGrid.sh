@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 14.12.2021
+# Last Modified Date: 13.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # copy files from grid to local machine run by run
@@ -13,7 +13,10 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
 # get variables from config file
-Runs="$(jq -r 'keys[]' $StatusFile)"
+{
+        flock 100
+        Runs="$(jq -r 'keys[]' $StatusFile)"
+} 100>$LockFile
 LocalOutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 GridOutputDir="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir' config.json)/$LocalOutputDir"
 CopyJobs="$(jq -r '.misc.CopyJobs' config.json)"
@@ -26,7 +29,11 @@ FilesCopied=""
 
 for Run in $Runs; do
 
-	Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    {
+        flock 100
+	    Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+    } 100>$LockFile
+
 	Status="$(jq -r '.Status' <<<$Data)"
 	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
 
@@ -36,10 +43,10 @@ for Run in $Runs; do
 
 	FilesCopied=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
 
-	(
-		flock 100
-		jq --arg Run "$Run" --arg FilesCopied "$FilesCopied" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
-	) 100>$LockFile
+    { 
+            flock 100
+            jq --arg Run "$Run" --arg FilesCopied "$FilesCopied" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
+    } 100>$LockFile
 
 done
 
