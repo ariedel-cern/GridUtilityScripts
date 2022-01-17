@@ -2,26 +2,31 @@
  * File              : ComputeKinematicWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 27.10.2021
+ * Last Modified Date: 17.01.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
 #include "GridHelperMacros.H"
 #include <boost/algorithm/string.hpp>
-#include <boost/range/iterator_range_core.hpp>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
-Int_t ComputeKinematicWeights(const char *dataFileName) {
+Int_t ComputeKinematicWeights(const char *ConfigFileName,
+                              const char *MergedFileName) {
 
-  cout << dataFileName << endl;
+  // load config file
+  std::fstream ConfigFile(ConfigFileName);
+  nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
+
   // open file holding data
-  TFile *dataFile = new TFile(dataFileName, "READ");
+  TFile *dataFile = new TFile(MergedFileName, "READ");
 
   // open output directory
-  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-      dataFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
+  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(dataFile->Get(
+      Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
 
   // open new file holding weights
-  std::string weightFileName(dataFileName);
+  std::string weightFileName(MergedFileName);
   boost::replace_all(weightFileName, "Merged", "KinematicWeights");
   TFile *weightFile = new TFile(weightFileName.c_str(), "RECREATE");
 
@@ -33,7 +38,6 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
 
   // loop over all tasks
   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
-
     // get the output list of a task
     TaskList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
 
@@ -54,7 +58,13 @@ Int_t ComputeKinematicWeights(const char *dataFileName) {
     phiWeightHist->SetTitle("#varphi weights");
     Double_t scale = phiHist->GetEntries() / phiHist->GetNbinsX();
     for (Int_t i = 1; i <= phiHist->GetNbinsX(); i++) {
-      phiWeightHist->SetBinContent(i, scale * (1. / phiHist->GetBinContent(i)));
+      if (phiHist->GetBinContent(i) < 0.5) {
+        phiWeightHist->SetBinContent(i, 0);
+      } else {
+
+        phiWeightHist->SetBinContent(i,
+                                     scale * (1. / phiHist->GetBinContent(i)));
+      }
     }
 
     // compute pt weights

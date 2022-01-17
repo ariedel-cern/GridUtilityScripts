@@ -2,14 +2,12 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 18.12.2021
+# Last Modified Date: 17.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
 
 [ ! -f config.json ] && echo "No config file!!!" && exit 1
-StatusFile="$(jq -r '.StatusFile' config.json)"
-[ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
 echo "Merging $(jq -r '.task.GridOutputFile' config.json) run by run in $(jq -r '.task.GridOutputDir' config.json)"
 
