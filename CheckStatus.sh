@@ -13,8 +13,8 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
 {
-        flock 100
-        Runs="$(jq -r 'keys[]' $StatusFile)"
+	flock 100
+	Runs="$(jq -r 'keys[]' $StatusFile)"
 } 100>$LockFile
 
 # loop variables
@@ -44,65 +44,64 @@ Bool="0"
 
 for Run in $Runs; do
 
-    # get data for this run
-    {
-        flock 100
-	    Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
-    } 100>$LockFile
+	# get data for this run
+	{
+		flock 100
+		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
+	} 100>$LockFile
 
-    # clear variables
-    Column=""
-    RunDoneAOD="0"
+	# clear variables
+	Column=""
+	RunDoneAOD="0"
 
-    # First entry in the row is run number
-    Column+="$Run,"
+	# First entry in the row is run number
+	Column+="$Run,"
 
-    # second entry is status of the Run
-    Status="$(jq -r '.Status' <<<$Data)"
-    Column+="$Status,"
+	# second entry is status of the Run
+	Status="$(jq -r '.Status' <<<$Data)"
+	Column+="$Status,"
 
-    # iterate over Reincarnation
+	# iterate over Reincarnation
 	Reincarnations="$(jq -r 'keys_unsorted[-4:][]' <<<$Data)"
 	for Reincarnation in $Reincarnations; do
 
-            # string for header, only construct it once
-            [ $Bool -eq 0 ] && Header+=",${Reincarnation}"
+		# string for header, only construct it once
+		[ $Bool -eq 0 ] && Header+=",${Reincarnation}"
 
-            # get status of the masterjob of the current reincarnation
-            Status="$(jq -r --arg Re $Reincarnation '.[$Re].Status' <<<$Data)"
+		# get status of the masterjob of the current reincarnation
+		Status="$(jq -r --arg Re $Reincarnation '.[$Re].Status' <<<$Data)"
 
-            # only use data if the reincarnation is DONE
-            if [ $Status = "DONE" ];then
+		# only use data if the reincarnation is DONE
+		if [ $Status = "DONE" ]; then
 
-                if [ $Reincarnation = "R0" ];then
-                        RunAOD=$(jq -r --arg Re $Reincarnation '.[$Re].AODTotal' <<<$Data)
-                        TotalAOD=$(($TotalAOD+$RunAOD))
-                fi
+			if [ $Reincarnation = "R0" ]; then
+				RunAOD=$(jq -r --arg Re $Reincarnation '.[$Re].AODTotal' <<<$Data)
+				TotalAOD=$(($TotalAOD + $RunAOD))
+			fi
 
-                RunDoneAOD=$(($RunDoneAOD+$(jq -r --arg Re $Reincarnation '.[$Re].AODTotal' <<<$Data)-$(jq -r --arg Re $Reincarnation '.[$Re].AODError' <<<$Data)))
+			RunDoneAOD=$(($RunDoneAOD + $(jq -r --arg Re $Reincarnation '.[$Re].AODTotal' <<<$Data) - $(jq -r --arg Re $Reincarnation '.[$Re].AODError' <<<$Data)))
 
-                RunSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobTotal' <<<$Data)
-                TotalSubjob=$(($TotalSubjob+$RunSubjob))
+			RunSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobTotal' <<<$Data)
+			TotalSubjob=$(($TotalSubjob + $RunSubjob))
 
-                RunDoneSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobDone' <<<$Data)
-                TotalDoneSubjob=$(($TotalDoneSubjob+$RunDoneSubjob))
+			RunDoneSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobDone' <<<$Data)
+			TotalDoneSubjob=$(($TotalDoneSubjob + $RunDoneSubjob))
 
-                RunSubjobSucess=$(echo "scale=2; $RunDoneSubjob/$RunSubjob" | bc )
-                RunAODSuccess=$(echo "scale=2; $RunDoneAOD/$RunAOD" | bc )
-                Column+="$(printf "%1.2f" $RunAODSuccess)|$(printf "%1.2f" $RunSubjobSucess),"
+			RunSubjobSucess=$(echo "scale=2; $RunDoneSubjob/$RunSubjob" | bc)
+			RunAODSuccess=$(echo "scale=2; $RunDoneAOD/$RunAOD" | bc)
+			Column+="$(printf "%1.2f" $RunAODSuccess)|$(printf "%1.2f" $RunSubjobSucess),"
 
-            else
-                Column+="----|----,"
-            fi
+		else
+			Column+="----|----,"
+		fi
 
+	done
 
-    done
+	TotalDoneAOD=$(($TotalDoneAOD + $RunDoneAOD))
 
-    TotalDoneAOD=$(($TotalDoneAOD+$RunDoneAOD))
-
-    # string for header before the first row
-    [ $Bool -eq 0 ] && Table+="$Header\n" && Bool="1"
-    Table+="$Column\n"
+	# string for header before the first row
+	[ $Bool -eq 0 ] && Table+="$Header\n" && Bool="1"
+	Table+="$Column\n"
 
 done
 
@@ -110,8 +109,8 @@ echo "##########################################################################
 echo -e $Table | column -s ',' -t
 echo "###############################################################################"
 
-TotalSubjobSuccess=$(echo "scale=2; $TotalDoneSubjob/$TotalSubjob" | bc )
-TotalAODSuccess=$(echo "scale=2; $TotalDoneAOD/$TotalAOD" | bc )
+TotalSubjobSuccess=$(echo "scale=2; $TotalDoneSubjob/$TotalSubjob" | bc)
+TotalAODSuccess=$(echo "scale=2; $TotalDoneAOD/$TotalAOD" | bc)
 
 cat <<EOF | column -s ',' -t
 Total stats,

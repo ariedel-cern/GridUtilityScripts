@@ -85,12 +85,12 @@ for Run in $Runs; do
 		Xml="${GridXmlCollection}/${Run}.xml"
 	fi
 
-    # does not always work on the first try
-    # alien.py cat works like a download, which fails from time to time
-    NumberAOD="0"
-    until [ $NumberAOD -ge 1 ]; do
-	    NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
-    done
+	# does not always work on the first try
+	# alien.py cat works like a download, which fails from time to time
+	NumberAOD="0"
+	until [ $NumberAOD -ge 1 ]; do
+		NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
+	done
 
 	((RunCounter++))
 	echo "Submitted $RunCounter/$NumberOfRuns Runs"

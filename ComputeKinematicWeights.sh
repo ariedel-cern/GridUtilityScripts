@@ -12,7 +12,6 @@
 OutputDir="$(jq -r '.task.GridOutputDir' config.json)"
 echo "Compute kinematic weights run by run in $OutputDir"
 
-
 find $OutputDir -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q ${GRID_UTILITY_SCRIPTS}/ComputeKinematicWeights.C'(\"config.json\",\"{}\")'"
 # aliroot -b -l -q ${GRID_UTILITY_SCRIPTS}/ComputeKinematicWeights.C'("config.json","output/137161/137161_Merged.root")'
 

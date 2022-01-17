@@ -78,7 +78,7 @@ for Run in $Runs; do
 
 	for Reincarnation in $Reincarnations; do
 
-        # if the masterjob is DONE, skip to the next reincarnation
+		# if the masterjob is DONE, skip to the next reincarnation
 		Status="$(jq -r --arg Re $Reincarnation '.[$Re].Status' <<<$Data)"
 
 		[ "$Status" == "DONE" ] && continue
