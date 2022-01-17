@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 13.01.2022
+# Last Modified Date: 17.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -53,11 +53,11 @@ for Run in $Runs; do
 
 	echo "Reincarnate Run $Run"
 
-	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
-	if [ "$Status" == "DONE" ]; then
-		echo "$Run is DONE!"
-		continue
-	fi
+	# # if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
+	# if [ "$Status" == "DONE" ]; then
+	# 	echo "$Run is DONE!"
+	# 	continue
+	# fi
 
 	# iterate over reincarnations
 	Indices="$(jq -r 'keys_unsorted[-4:]|length' <<<$Data)"
@@ -121,9 +121,8 @@ for Run in $Runs; do
 		Re1="R$((Index + 1))"
 		MasterjobIdRe1="$(jq -r --arg Re $Re1 '.[$Re].MasterjobID' <<<$Data)"
 		StatusRe1="$(jq -r --arg Re $Re1 '.[$Re].Status' <<<$Data)"
-		# if the next reincarnation is running, the masterjob id will not be -1
-		# or it is already done
 
+		# if the next reincarnation is running, the masterjob id will not be -1
 		if [ "$MasterjobIdRe1" -ne -1 ]; then
 			echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
 			continue

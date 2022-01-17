@@ -2,7 +2,7 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 13.01.2022
+# Last Modified Date: 17.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
@@ -56,9 +56,12 @@ echo "First run was submitted, start background jobs..."
 
 echo "Analysis Train still going..."
 wait
+echo "Analysis Train finished..."
 
 # merge files run by run
-# Merge.sh &>$MERGE_LOG
+echo "Start merging..."
+Merge.sh &>$MERGE_LOG
+echo "Stop merging..."
 
 echo "FINISHED"
 
