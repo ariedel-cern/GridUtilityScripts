@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 13.01.2022
+# Last Modified Date: 17.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -85,7 +85,12 @@ for Run in $Runs; do
 		Xml="${GridXmlCollection}/${Run}.xml"
 	fi
 
-	NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
+    # does not always work on the first try
+    # alien.py cat works like a download, which fails from time to time
+    NumberAOD="0"
+    until [ $NumberAOD -ge 1 ]; do
+	    NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
+    done
 
 	((RunCounter++))
 	echo "Submitted $RunCounter/$NumberOfRuns Runs"
