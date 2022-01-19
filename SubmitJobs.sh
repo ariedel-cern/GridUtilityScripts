@@ -12,9 +12,9 @@
 # if running locally, just call aliroot and bail out
 if [ "$(jq -r '.task.AnalysisMode' config.json)" = "local" ]; then
 	echo "################################################################################"
-    DataDir="$(jq -r '.task.LocalDataDir' config.json)"
+	DataDir="$(jq -r '.task.LocalDataDir' config.json)"
 	echo "Running locally over $DataDir"
-    [ ! -d $DataDir ] && echo "No local data found" && exit 2
+	[ ! -d $DataDir ] && echo "No local data found" && exit 2
 	aliroot -q -l -b run.C\(\"config.json\"\)
 	echo "################################################################################"
 	exit 0
