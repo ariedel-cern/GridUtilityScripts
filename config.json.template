@@ -7,7 +7,7 @@
     "ThresholdActiveSubjob": 1400,
     "ThresholdRunningTime": 90,
     "ThresholdCpuCost": 90,
-    "ThresholdReincarnateWaitingJobs": 2,
+    "ThresholdReincarnateWaitingJobs": 2
   },
   "task": {
     "BaseName": "TEST",

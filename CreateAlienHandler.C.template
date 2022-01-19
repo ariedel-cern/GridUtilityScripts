@@ -35,11 +35,13 @@ AliAnalysisGrid *CreateAlienHandler(const char *ConfigFileName) {
   plugin->SetDataPattern(
       Jconfig["task"]["DataPattern"].get<std::string>().c_str());
 
-  plugin->AddRunNumber(137161);
   if (Jconfig["task"]["RunOverData"].get<bool>()) {
     plugin->SetRunPrefix("000"); // IMPORTANT!
     plugin->SetOutputToRunNo();  // IMPORTANT!
   }
+  
+  // dummy run number
+  plugin->AddRunNumber(137161);
 
   // ============================================================================
 
