@@ -2,7 +2,7 @@
 # File              : CheckStatus.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 20.12.2021
-# Last Modified Date: 17.01.2022
+# Last Modified Date: 19.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check status of analysis train
@@ -87,8 +87,8 @@ for Run in $Runs; do
 			RunDoneSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobDone' <<<$Data)
 			TotalDoneSubjob=$(($TotalDoneSubjob + $RunDoneSubjob))
 
-			RunSubjobSucess=$(echo "scale=2; $RunDoneSubjob/$RunSubjob" | bc)
-			RunAODSuccess=$(echo "scale=2; $RunDoneAOD/$RunAOD" | bc)
+			RunSubjobSucess=$(echo "scale=2; ${RunDoneSubjob:=0}/${RunSubjob:=1}" | bc)
+			RunAODSuccess=$(echo "scale=2; ${RunDoneAOD:=0}/${RunAOD:=1}" | bc)
 			Column+="$(printf "%1.2f" $RunAODSuccess)|$(printf "%1.2f" $RunSubjobSucess),"
 
 		else

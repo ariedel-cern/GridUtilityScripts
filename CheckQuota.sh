@@ -2,7 +2,7 @@
 # File              : CheckQuota.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 20.12.2021
+# Last Modified Date: 19.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check if we can submit another masterjob to grid

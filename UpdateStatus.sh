@@ -36,29 +36,19 @@ GetData() {
 
 	MasterjobStatus=$(awk '/status:/{print $NF}' <<<$MasterjobData)
 	SubjobTotal="$(awk '/total/{print $(NF-1)}' <<<$MasterjobData)"
-	SubjobTotal="${SubjobTotal:=0}"
 
 	SubjobDone="$(awk '/DONE:/{print $NF}' <<<$MasterjobData)"
-	SubjobDone="${SubjobDone:=0}"
 
 	SubjobWaiting="$(awk '/WAITING:/{print $NF}' <<<$MasterjobData)"
-	SubjobWaiting="${SubjobWaiting:=0}"
 
 	local SubjobRunning="$(awk '/RUNNING:/{print $NF}' <<<$MasterjobData)"
-	SubjobRunning="${SubjobRunning:=0}"
 	local SubjobAssigned="$(awk '/ASSIGNED:/{print $NF}' <<<$MasterjobData)"
-	SubjobAssigned="${SubjobAssigned:=0}"
 	local SubjobStarted="$(awk '/STARTED:/{print $NF}' <<<$MasterjobData)"
-	SubjobStarted="${SubjobStarted:=0}"
 	local SubjobSaving="$(awk '/SAVEING:/{print $NF}' <<<$MasterjobData)"
-	SubjobSaving="${SubjobSaving:=0}"
 
-	SubjobActive="$(($SubjobRunning + $SubjobAssigned + $SubjobStarted + $SubjobSaving))"
-	SubjobActive="${SubjobActive:=0}"
+	SubjobActive="$((${SubjobRunning:=0} + ${SubjobAssigned:=0} + ${SubjobStarted:=0} + ${SubjobSaving:=0}))"
 
-	SubjobError=$(($SubjobTotal - $SubjobDone - $SubjobWaiting - $SubjobActive))
-	SubjobError="${SubjobError:=0}"
-
+	SubjobError=$((${SubjobTotal:=0} - ${SubjobDone:=0} - ${SubjobWaiting:=0} - ${SubjobActive:=0}))
 }
 
 for Run in $Runs; do
