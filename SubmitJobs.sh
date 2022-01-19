@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 17.01.2022
+# Last Modified Date: 18.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -12,7 +12,9 @@
 # if running locally, just call aliroot and bail out
 if [ "$(jq -r '.task.AnalysisMode' config.json)" = "local" ]; then
 	echo "################################################################################"
-	echo "Running locally over $(jq -r '.task.LocalDataDir' config.json)"
+    DataDir="$(jq -r '.task.LocalDataDir' config.json)"
+	echo "Running locally over $DataDir"
+    [ ! -d $DataDir ] && echo "No local data found" && exit 2
 	aliroot -q -l -b run.C\(\"config.json\"\)
 	echo "################################################################################"
 	exit 0

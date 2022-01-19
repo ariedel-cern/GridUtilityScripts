@@ -2,7 +2,7 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 17.01.2022
+# Last Modified Date: 18.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
@@ -15,7 +15,7 @@ set -o pipefail
 
 # submit jobs to the grid -> 0. Reincarnation
 (
-	echo $BASHPID
+	echo "PID:" $BASHPID
 	SubmitJobs.sh
 	echo "ALL RUNS SUBMITTED"
 ) &>"Submit.log" &
@@ -31,7 +31,7 @@ echo "First run was submitted, start background jobs..."
 
 # update status of running jobs and reincarnate them if necessary
 (
-	echo $BASHPID
+	echo "PID:" $BASHPID
 	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		UpdateStatus.sh
 		Reincarnate.sh
@@ -44,7 +44,7 @@ echo "First run was submitted, start background jobs..."
 
 # copy file from grid
 (
-	echo $BASHPID
+	echo "PID:" $BASHPID
 	while jq '.[].Status' $StatusFile | grep -q "RUNNING"; do
 		CopyFromGrid.sh
 		CheckFileIntegrity.sh
