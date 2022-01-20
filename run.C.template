@@ -1,8 +1,8 @@
 /**
- * File              : run.C
+ * File              : run.C.template
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 07.05.2021
- * Last Modified Date: 06.12.2021
+ * Last Modified Date: 19.01.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -26,7 +26,7 @@ void LoadLibraries();
 TChain *CreateAODChain(const char *aDataDir, Int_t aRuns, Int_t offset);
 TChain *CreateESDChain(const char *aDataDir, Int_t aRuns, Int_t offset);
 
-void run(const char *ConfigFileName) {
+void run(const char *ConfigFileName, Int_t RunNumber) {
 
   // Time
   TStopwatch timer;
@@ -64,7 +64,8 @@ void run(const char *ConfigFileName) {
   // Connect plug-in to the analysis manager:
   if (std::string("grid") ==
       Jconfig["task"]["AnalysisMode"].get<std::string>()) {
-    AliAnalysisGrid *alienHandler = CreateAlienHandler(ConfigFileName);
+    AliAnalysisGrid *alienHandler =
+        CreateAlienHandler(ConfigFileName, RunNumber);
     if (!alienHandler) {
       return;
     }
@@ -105,7 +106,8 @@ void run(const char *ConfigFileName) {
               << "Wagon for centrality bin (" << i << "/"
               << CentralityBinEdges.size() - 1 << "): " << lowCentralityBinEdge
               << "-" << highCentralityBinEdge << std::endl;
-    AddTask(ConfigFileName, lowCentralityBinEdge, highCentralityBinEdge);
+    AddTask(ConfigFileName, RunNumber, lowCentralityBinEdge,
+            highCentralityBinEdge);
   }
 
   // Enable debug printouts

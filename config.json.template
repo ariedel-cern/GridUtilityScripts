@@ -31,7 +31,8 @@
     "TimeToLive": [28800, 21600, 14400, 7200],
     "LocalDataDir": "/home/vagrant/data/2010/LHC10h/000137161/ESDs/pass2/AOD160",
     "LocalOutputFile": "Output.root",
-    "CentralityBinEdges": [0, 5, 10, 20, 30, 40, 50, 60, 70, 80]
+    "CentralityBinEdges": [0, 5, 10, 20, 30, 40, 50, 60, 70, 80],
+    "UseWeights": false
   },
   "Runs": [137161, 139510, 139507, 139505, 139503, 139465, 139438, 139437],
   "StatusFile": "STATUS.json",
