@@ -150,14 +150,14 @@ for Run in $Runs; do
 		# get xml collection of all failed AODs
 		# TODO check if certs and password are there
 
-        if [ "$UseWeights" = "false" ];then
-                LocalWorkDir="GridFiles/dummy"
-        else
-                LocalWorkDir="GridFiles/${Run}"
-        fi
+		if [ "$UseWeights" = "false" ]; then
+			LocalWorkDir="GridFiles/dummy"
+		else
+			LocalWorkDir="GridFiles/${Run}"
+		fi
 
-        # change to local work dir
-        cd $LocalWorkDir
+		# change to local work dir
+		cd $LocalWorkDir
 
 		echo "Download XML collection of failed subjobs"
 		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
@@ -187,13 +187,13 @@ for Run in $Runs; do
 		alien_cp "file:$XmlCollection" "alien:${GridOutputDirNew}/"
 
 		# submit new masterjob
-        MasterjobIdRe1="null"
-        until [ "$MasterjobIdRe1" != "null" ]; do
-		        MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" "$Run" -json | jq -r '.results[0].jobId')"
-        done
+		MasterjobIdRe1="null"
+		until [ "$MasterjobIdRe1" != "null" ]; do
+			MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" "$Run" -json | jq -r '.results[0].jobId')"
+		done
 
-        # switch back
-        cd -
+		# switch back
+		cd -
 
 		echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 

@@ -53,33 +53,33 @@ LockFile="$(jq -r '.LockFile' config.json)"
 UseWeights=$(jq -r '.task.UseWeights' config.json)
 echo "################################################################################"
 
-if [ "$UseWeights" = "false" ];then
-        echo "Do not use run specific weights, create dummy working dir for all runns"
-        echo "Run steering macros in offline mode to generate necessary files"
+if [ "$UseWeights" = "false" ]; then
+	echo "Do not use run specific weights, create dummy working dir for all runns"
+	echo "Run steering macros in offline mode to generate necessary files"
 
-        aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
+	aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
 
-        echo "Modify jdl to use XML collection in ${GridXmlCollection}"
-        sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+	echo "Modify jdl to use XML collection in ${GridXmlCollection}"
+	sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
 
-        echo "Copy everything we need to grid"
-        {
-            alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
-            alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
-        } || exit 2
+	echo "Copy everything we need to grid"
+	{
+		alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
+		alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
+		alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
+		alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
+		alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
+	} || exit 2
 
-        echo "Clean up local working dir"
-        {
-            mkdir -p "GridFiles/Dummy"
-            mv "${Jdl}" "GridFiles/Dummy/"
-            mv "${Macro}" "GridFiles/Dummy/"
-            mv "analysis.sh" "GridFiles/Dummy/"
-            mv "analysis_validation.sh" "GridFiles/Dummy/"
-            mv "analysis.root" "GridFiles/Dummy/"
-        }
+	echo "Clean up local working dir"
+	{
+		mkdir -p "GridFiles/Dummy"
+		mv "${Jdl}" "GridFiles/Dummy/"
+		mv "${Macro}" "GridFiles/Dummy/"
+		mv "analysis.sh" "GridFiles/Dummy/"
+		mv "analysis_validation.sh" "GridFiles/Dummy/"
+		mv "analysis.root" "GridFiles/Dummy/"
+	}
 fi
 
 # submit jobs run by run
@@ -92,60 +92,59 @@ for Run in $Runs; do
 	echo "################################################################################"
 	echo "Submit Run $Run with Task $BaseName"
 
-    if [ "$UseWeights" == "true" ];then
+	if [ "$UseWeights" == "true" ]; then
 
-            echo "Generate all necessary files"
+		echo "Generate all necessary files"
 
-            echo "Run steering macros in offline mode to generate necessary files"
-            aliroot -q -l -b run.C\(\"config.json\",$Run\) || exit 2
+		echo "Run steering macros in offline mode to generate necessary files"
+		aliroot -q -l -b run.C\(\"config.json\",$Run\) || exit 2
 
-            echo "Modify jdl to use XML collection in ${GridXmlCollection}"
-            sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+		echo "Modify jdl to use XML collection in ${GridXmlCollection}"
+		sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
 
-            echo "Modify jdl to use run specific input"
-            sed -i -e "/${Macro}/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-            sed -i -e "/analysis.root/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-            sed -i -e "/Executable/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-            sed -i -e "/Validationcommand/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+		echo "Modify jdl to use run specific input"
+		sed -i -e "/${Macro}/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+		sed -i -e "/analysis.root/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+		sed -i -e "/Executable/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+		sed -i -e "/Validationcommand/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
 
+		echo "Copy everything we need to grid"
+		{
+			alien_mkdir -p "alien:${GridWorkDir}/${Run}/"
+			alien_cp "file:${Jdl}" "alien:${GridWorkDir}/${Run}/" -retry 10
+			alien_cp "file:${Macro}" "alien:${GridWorkDir}/${Run}/" -retry 10
+			alien_cp "file:analysis.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
+			alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
+			alien_cp "file:analysis.root" "alien:${GridWorkDir}/${Run}/" -retry 10
+		} || exit 2
 
-        echo "Copy everything we need to grid"
-        {
-            alien_mkdir -p "alien:${GridWorkDir}/${Run}/"
-            alien_cp "file:${Jdl}" "alien:${GridWorkDir}/${Run}/" -retry 10
-            alien_cp "file:${Macro}" "alien:${GridWorkDir}/${Run}/" -retry 10
-            alien_cp "file:analysis.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
-            alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
-            alien_cp "file:analysis.root" "alien:${GridWorkDir}/${Run}/" -retry 10
-        } || exit 2
-        
-        echo "Clean up local working directory"
-        {
-            mkdir -p "GridFiles/${Run}"
-            mv "${Jdl}" "GridFiles/${Run}/"
-            mv "${Macro}" "GridFiles/${Run}/"
-            mv "analysis.sh" "GridFiles/${Run}/"
-            mv "analysis_validation.sh" "GridFiles/${Run}/"
-            mv "analysis.root" "GridFiles/${Run}/"
-        } || exit 4
+		echo "Clean up local working directory"
+		{
+			mkdir -p "GridFiles/${Run}"
+			mv "${Jdl}" "GridFiles/${Run}/"
+			mv "${Macro}" "GridFiles/${Run}/"
+			mv "analysis.sh" "GridFiles/${Run}/"
+			mv "analysis_validation.sh" "GridFiles/${Run}/"
+			mv "analysis.root" "GridFiles/${Run}/"
+		} || exit 4
 
-        fi
+	fi
 
-        JobId="null"
+	JobId="null"
 
-        until [ "$JobId" != "null" ]; do
-                if [ "$UseWeights" == "true" ];then
-            JobId=$(alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
-                else
-            JobId=$(alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
-                fi
-        done
+	until [ "$JobId" != "null" ]; do
+		if [ "$UseWeights" == "true" ]; then
+			JobId=$(alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+		else
+			JobId=$(alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+		fi
+	done
 
-    if [ "$RunOverData" == "true" ]; then
-         Xml="${GridXmlCollection}/000${Run}.xml"
-    else
-         Xml="${GridXmlCollection}/${Run}.xml"
-    fi
+	if [ "$RunOverData" == "true" ]; then
+		Xml="${GridXmlCollection}/000${Run}.xml"
+	else
+		Xml="${GridXmlCollection}/${Run}.xml"
+	fi
 
 	# does not always work on the first try
 	# alien.py cat works like a download, which fails from time to time
