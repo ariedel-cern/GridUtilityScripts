@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 20.01.2022
+# Last Modified Date: 27.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -29,34 +29,13 @@ GridXmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
 Jdl="$(jq -r '.task.Jdl' config.json)"
 Macro="$(jq -r '.task.AnalysisMacro' config.json)"
 
-# create remote and local working directory
+echo "clean up remote working dir"
 alien_rm -R -f "alien:${GridWorkDir}"
 alien_mkdir -s "alien:${GridWorkDir}"
 
-UseWeights=$(jq -r '.task.UseWeights' config.json)
-
-if [ "$UseWeights" = "false" ];then
-        echo "Run steering macros in offline mode to generate necessary files"
-        aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
-
-        echo "Modify jdl to use XML collection in ${GridXmlCollection}"
-        sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
-
-        echo "Copy everything we need to grid"
-        {
-            alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
-            alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
-            alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
-        } || exit 2
-else
-        rm -rf GridFiles
-        mkdir -p GridFiles
-fi
-
-echo "################################################################################"
-
+echo "clean up local working dir"
+rm -rf GridFiles
+mkdir -p GridFiles
 # get more variables from config file
 RunCounter="0"
 JobId=""
@@ -71,6 +50,37 @@ NumberAOD=""
 StatusFile="$(jq -r '.StatusFile' config.json)"
 echo "{}" >$StatusFile
 LockFile="$(jq -r '.LockFile' config.json)"
+UseWeights=$(jq -r '.task.UseWeights' config.json)
+echo "################################################################################"
+
+if [ "$UseWeights" = "false" ];then
+        echo "Do not use run specific weights, create dummy working dir for all runns"
+        echo "Run steering macros in offline mode to generate necessary files"
+
+        aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
+
+        echo "Modify jdl to use XML collection in ${GridXmlCollection}"
+        sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+
+        echo "Copy everything we need to grid"
+        {
+            alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
+            alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
+            alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
+            alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
+            alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
+        } || exit 2
+
+        echo "Clean up local working dir"
+        {
+            mkdir -p "GridFiles/Dummy"
+            mv "${Jdl}" "GridFiles/Dummy/"
+            mv "${Macro}" "GridFiles/Dummy/"
+            mv "analysis.sh" "GridFiles/Dummy/"
+            mv "analysis_validation.sh" "GridFiles/Dummy/"
+            mv "analysis.root" "GridFiles/Dummy/"
+        }
+fi
 
 # submit jobs run by run
 for Run in $Runs; do
@@ -86,17 +96,17 @@ for Run in $Runs; do
 
             echo "Generate all necessary files"
 
-        echo "Run steering macros in offline mode to generate necessary files"
-        aliroot -q -l -b run.C\(\"config.json\",$Run\) || exit 2
+            echo "Run steering macros in offline mode to generate necessary files"
+            aliroot -q -l -b run.C\(\"config.json\",$Run\) || exit 2
 
-        echo "Modify jdl to use XML collection in ${GridXmlCollection}"
-        sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+            echo "Modify jdl to use XML collection in ${GridXmlCollection}"
+            sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
 
-        echo "Modify jdl to use run specific input"
-        sed -i -e "/${Macro}/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-        sed -i -e "/analysis.root/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-        sed -i -e "/Executable/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
-        sed -i -e "/Validationcommand/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+            echo "Modify jdl to use run specific input"
+            sed -i -e "/${Macro}/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+            sed -i -e "/analysis.root/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+            sed -i -e "/Executable/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
+            sed -i -e "/Validationcommand/ s|${GridWorkDir}|${GridWorkDir}/${Run}|" $Jdl
 
 
         echo "Copy everything we need to grid"
@@ -111,28 +121,30 @@ for Run in $Runs; do
         
         echo "Clean up local working directory"
         {
-            mkdir "GridFiles/${Run}"
-            mv "${Jdl}" "GridFiles/${Run}"
-            mv "${Macro}" "GridFiles/${Run}"
-            mv "analysis.sh" "GridFiles/${Run}"
-            mv "analysis_validation.sh" "GridFiles/${Run}"
-            mv "analysis.root" "GridFiles/${Run}"
+            mkdir -p "GridFiles/${Run}"
+            mv "${Jdl}" "GridFiles/${Run}/"
+            mv "${Macro}" "GridFiles/${Run}/"
+            mv "analysis.sh" "GridFiles/${Run}/"
+            mv "analysis_validation.sh" "GridFiles/${Run}/"
+            mv "analysis.root" "GridFiles/${Run}/"
         } || exit 4
 
+        fi
+
+        JobId="null"
+
+        until [ "$JobId" != "null" ]; do
+                if [ "$UseWeights" == "true" ];then
             JobId=$(alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
-            Xml="${GridXmlCollection}/000${Run}.xml"
+                else
+            JobId=$(alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+                fi
+        done
 
-
+    if [ "$RunOverData" == "true" ]; then
+         Xml="${GridXmlCollection}/000${Run}.xml"
     else
-            if [ "$RunOverData" == "true" ]; then
-                # submit run over data
-                JobId=$(alien_submit $GridWorkDir/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
-                Xml="${GridXmlCollection}/000${Run}.xml"
-            else
-                # submit run over MC production
-                JobId=$(alien_submit $GridWorkDir/${Jdl} "${Run}.xml" $Run -json | jq -r '.results[0].jobId')
-                Xml="${GridXmlCollection}/${Run}.xml"
-            fi
+         Xml="${GridXmlCollection}/${Run}.xml"
     fi
 
 	# does not always work on the first try

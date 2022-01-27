@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 19.01.2022
+# Last Modified Date: 27.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -16,6 +16,9 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 	flock 100
 	Runs="$(jq -r 'keys[]' $StatusFile)"
 } 100>$LockFile
+
+# options from config file
+UseWeights=$(jq -r '.task.UseWeights' config.json)
 
 # loop variables
 Data=""
@@ -31,6 +34,7 @@ MasterjobIdRe0=""
 MasterjobIdRe1=""
 GridOutputDirOld=""
 GridOutputDirNew=""
+LocalWorkDir=""
 FailedSubjobs=""
 JdlFileName=""
 GridXmlCollection=""
@@ -145,6 +149,16 @@ for Run in $Runs; do
 
 		# get xml collection of all failed AODs
 		# TODO check if certs and password are there
+
+        if [ "$UseWeights" = "false" ];then
+                LocalWorkDir="GridFiles/dummy"
+        else
+                LocalWorkDir="GridFiles/${Run}"
+        fi
+
+        # change to local work dir
+        cd $LocalWorkDir
+
 		echo "Download XML collection of failed subjobs"
 		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
 
@@ -173,7 +187,13 @@ for Run in $Runs; do
 		alien_cp "file:$XmlCollection" "alien:${GridOutputDirNew}/"
 
 		# submit new masterjob
-		MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" $Run -json | jq -r '.results[0].jobId')"
+        MasterjobIdRe1="null"
+        until [ "$MasterjobIdRe1" != "null" ]; do
+		        MasterjobIdRe1="$(alien_submit "${GridOutputDirNew}/${JdlFileName}" "${XmlCollection}" "$Run" -json | jq -r '.results[0].jobId')"
+        done
+
+        # switch back
+        cd -
 
 		echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 
