@@ -2,7 +2,7 @@
  * File              : GridHelperMacros.H
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.10.2021
- * Last Modified Date: 02.11.2021
+ * Last Modified Date: 20.01.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -76,3 +76,28 @@ TObject *IterateList(TList *list, std::string searchString) {
 // }
 
 // }
+
+void *SetWeights(Int_t RunNumber, Float_t CenMin, Float_t CenMax,
+                 AliAnalysisTaskAR *task, const char *id) {
+
+  TFile *file = new TFile(Form("%s/weights/%i_KinematicWeights.root",
+                               std::getenv("GRID_UTILITY_SCRIPTS"), RunNumber),
+                          "READ");
+
+  TList *list = dynamic_cast<TList *>(
+      file->Get(Form("KinematicWeights_%.1f-%.1f%s", CenMin, CenMax, id)));
+
+  if (!list) {
+    std::cout << "List not found" << std::endl
+              << Form("KinematicWeights_%.1f-%.1f%s", CenMin, CenMax, id)
+              << std::endl;
+  }
+
+  task->SetWeightHistogram(kPT,
+                           dynamic_cast<TH1D *>(list->FindObject("PtWeights")));
+  task->SetWeightHistogram(
+      kETA, dynamic_cast<TH1D *>(list->FindObject("EtaWeights")));
+  task->SetWeightHistogram(
+      kPHI, dynamic_cast<TH1D *>(list->FindObject("PhiWeights")));
+  return nullptr;
+}
