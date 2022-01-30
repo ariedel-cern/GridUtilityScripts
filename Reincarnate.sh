@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 27.01.2022
+# Last Modified Date: 28.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -81,7 +81,7 @@ for Run in $Runs; do
 		# check if a reincarnation is still ongoing
 		if [ ! "$StatusRe0" == "DONE" ]; then
 			# now check if there are jobs running
-			if [ "$SubjobActiveRe0" -ne 0 ]; then
+			if [ "$SubjobActiveRe0" -ge 1 ]; then
 				# if there are, we do not need to reincarnate
 				echo "Reincarnation $Re0 still going, break..."
 				break
@@ -102,7 +102,7 @@ for Run in $Runs; do
 			echo "Last Reincarnation $Re0, Run $Run is DONE!"
 			{
 				flock 100
-				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "$SubjobErrorRe0" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
+				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "${SubjobErrorRe0:=-2}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
 				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			} 100>$LockFile
 			break
@@ -147,11 +147,16 @@ for Run in $Runs; do
 		MasterjobIdRe0="$(jq -r --arg Re $Re0 '.[$Re].MasterjobID' <<<$Data)"
 		FailedSubjobs="$(alien_ps -m $MasterjobIdRe0 | awk ' $4!~"D" { print $2 }' | tr '\n' ',' | sed s'/,$//')"
 
+        # check if FailedSubjobs are empty
+        if [ -z "$FailedSubjobs" ];then
+            break
+        fi
+
 		# get xml collection of all failed AODs
 		# TODO check if certs and password are there
 
 		if [ "$UseWeights" = "false" ]; then
-			LocalWorkDir="GridFiles/dummy"
+			LocalWorkDir="GridFiles/Dummy"
 		else
 			LocalWorkDir="GridFiles/${Run}"
 		fi
@@ -160,7 +165,14 @@ for Run in $Runs; do
 		cd $LocalWorkDir
 
 		echo "Download XML collection of failed subjobs"
-		curl -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
+		curl --retry 10 -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
+
+        # check if we managed to download a xml collection
+        # if not, break for now
+        if grep -q "Please pass a pid" "$XmlCollection"; then
+            cd -
+            break
+        fi
 
 		# get number of AODs which failed in this reincarnation
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
@@ -172,14 +184,14 @@ for Run in $Runs; do
 		alien_mkdir -p "$GridOutputDirNew"
 
 		# create new jdl file
-		cp "$(jq -r '.task.Jdl' config.json)" "$JdlFileName"
+		cp "$(jq -r '.task.Jdl' ../../config.json)" "$JdlFileName"
 
 		# adept to reincarnation
 		sed -i -e "/nodownload/c    \"LF:${GridOutputDirNew}/\$1,nodownload\"" $JdlFileName
 		sed -i -e "/OutputDir\s=/c OutputDir = \"${GridOutputDirNew}/\$2\/#alien_counter_03i#\";" $JdlFileName
-		InputFiles="$(jq -r --argjson I "$((Index + 1))" '.task.FilesPerSubjob[$I]' config.json)"
+		InputFiles="$(jq -r --argjson I "$((Index + 1))" '.task.FilesPerSubjob[$I]' ../../config.json)"
 		sed -i -e "/SplitMaxInputFileNumber/c SplitMaxInputFileNumber = \"$InputFiles\";" $JdlFileName
-		TTL="$(jq -r --argjson I "$((Index + 1))" '.task.TimeToLive[$I]' config.json)"
+		TTL="$(jq -r --argjson I "$((Index + 1))" '.task.TimeToLive[$I]' ../../config.json)"
 		sed -i -e "/TTL/c TTL = \"$TTL\"; " $JdlFileName
 
 		# upload to grid
@@ -201,9 +213,9 @@ for Run in $Runs; do
 		{
 			flock 100
 			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "$MasterjobIdRe1" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "$FailedAODs" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "${MasterjobIdRe1:=-2}" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "${FailedAODs:=-2}" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "${FailedAODs:=-2}" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
 		} 100>$LockFile
 

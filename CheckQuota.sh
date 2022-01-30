@@ -2,7 +2,7 @@
 # File              : CheckQuota.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 19.01.2022
+# Last Modified Date: 28.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check if we can submit another masterjob to grid
@@ -55,8 +55,8 @@ echo "Checking quotas passed, checking status of other masterjobs"
 echo "################################################################################"
 
 echo "$MasterjobsNotReady masterjobs are not running yet"
-if [ $MasterjobsNotReady -gt 0 ]; then
-	echo "Another Masterjob is not running yet, wait ...."
+if [ $MasterjobsNotReady -gt 1 ]; then
+	echo "More than 1 Masterjob is not running yet, wait ...."
 	echo "################################################################################"
 
 	exit 1

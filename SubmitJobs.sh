@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 27.01.2022
+# Last Modified Date: 28.01.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -36,11 +36,10 @@ alien_mkdir -s "alien:${GridWorkDir}"
 echo "clean up local working dir"
 rm -rf GridFiles
 mkdir -p GridFiles
+
 # get more variables from config file
 RunCounter="0"
 JobId=""
-LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
-ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
 BaseName="$(jq -r '.task.BaseName' config.json)"
 RunOverData="$(jq -r '.task.RunOverData' config.json)"
 Runs="$(jq -r '.Runs[]' config.json)"
@@ -54,6 +53,11 @@ UseWeights=$(jq -r '.task.UseWeights' config.json)
 echo "################################################################################"
 
 if [ "$UseWeights" = "false" ]; then
+
+    # refresh after every iteration so they can be change while the analysis is still running
+    LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+    ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
+
 	echo "Do not use run specific weights, create dummy working dir for all runns"
 	echo "Run steering macros in offline mode to generate necessary files"
 
@@ -79,7 +83,7 @@ if [ "$UseWeights" = "false" ]; then
 		mv "analysis.sh" "GridFiles/Dummy/"
 		mv "analysis_validation.sh" "GridFiles/Dummy/"
 		mv "analysis.root" "GridFiles/Dummy/"
-	}
+	} || exit 3
 fi
 
 # submit jobs run by run
@@ -159,7 +163,7 @@ for Run in $Runs; do
 	# update status file
 	{
 		flock 100
-		jq --arg Run "$Run" --arg JobId "$JobId" --arg NumberAOD "$NumberAOD" '.[$Run]={"Status":"RUNNING","FilesCopied":0,"FilesChecked":0,"Merged":0, "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":$NumberAOD,"AODError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1}}' $StatusFile | sponge $StatusFile
+		jq --arg Run "${Run:=-2}" --arg JobId "${JobId:=-2}" --arg NumberAOD "${NumberAOD:=-2}" '.[$Run]={"Status":"RUNNING","FilesCopied":0,"FilesChecked":0,"Merged":0, "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":$NumberAOD,"AODError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1}}' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
 
 	# dont wait after last job was submitted
