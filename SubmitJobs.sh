@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 28.01.2022
+# Last Modified Date: 02.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -28,66 +28,75 @@ GridWorkDir="$(jq -r '.task.GridHomeDir' config.json)/$(jq -r '.task.GridWorkDir
 GridXmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
 Jdl="$(jq -r '.task.Jdl' config.json)"
 Macro="$(jq -r '.task.AnalysisMacro' config.json)"
-
-echo "clean up remote working dir"
-alien_rm -R -f "alien:${GridWorkDir}"
-alien_mkdir -s "alien:${GridWorkDir}"
-
-echo "clean up local working dir"
-rm -rf GridFiles
-mkdir -p GridFiles
-
-# get more variables from config file
 RunCounter="0"
-JobId=""
+JobId="0"
 BaseName="$(jq -r '.task.BaseName' config.json)"
 RunOverData="$(jq -r '.task.RunOverData' config.json)"
 Runs="$(jq -r '.Runs[]' config.json)"
 RunCounter="0"
 NumberOfRuns=$(wc -l <<<$Runs)
-NumberAOD=""
+NumberAOD="0"
 StatusFile="$(jq -r '.StatusFile' config.json)"
-echo "{}" >$StatusFile
+
+[ ! -f $StatusFile ] && echo "{}" >$StatusFile
+
 LockFile="$(jq -r '.LockFile' config.json)"
 UseWeights=$(jq -r '.task.UseWeights' config.json)
-echo "################################################################################"
 
-if [ "$UseWeights" = "false" ]; then
+if jq '.[].Status' STATUS.json | grep -vq "RUNNING"; then
 
-    # refresh after every iteration so they can be change while the analysis is still running
-    LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
-    ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
+        echo "clean up remote working dir"
+        alien_rm -R -f "alien:${GridWorkDir}"
+        alien_mkdir -s "alien:${GridWorkDir}"
 
-	echo "Do not use run specific weights, create dummy working dir for all runns"
-	echo "Run steering macros in offline mode to generate necessary files"
+        echo "clean up local working dir"
+        rm -rf GridFiles
+        mkdir -p GridFiles
 
-	aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
+        echo "################################################################################"
 
-	echo "Modify jdl to use XML collection in ${GridXmlCollection}"
-	sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+        if [ "$UseWeights" = "false" ]; then
 
-	echo "Copy everything we need to grid"
-	{
-		alien_cp "file:${Jdl}" "alien:${GridWorkDir}/"
-		alien_cp "file:${Macro}" "alien:${GridWorkDir}/"
-		alien_cp "file:analysis.sh" "alien:${GridWorkDir}/"
-		alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/"
-		alien_cp "file:analysis.root" "alien:${GridWorkDir}/"
-	} || exit 2
+            # refresh after every iteration so they can be change while the analysis is still running
+            LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
+            ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
 
-	echo "Clean up local working dir"
-	{
-		mkdir -p "GridFiles/Dummy"
-		mv "${Jdl}" "GridFiles/Dummy/"
-		mv "${Macro}" "GridFiles/Dummy/"
-		mv "analysis.sh" "GridFiles/Dummy/"
-		mv "analysis_validation.sh" "GridFiles/Dummy/"
-		mv "analysis.root" "GridFiles/Dummy/"
-	} || exit 3
+            echo "Do not use run specific weights, create dummy working dir for all runns"
+            echo "Run steering macros in offline mode to generate necessary files"
+
+            aliroot -q -l -b run.C\(\"config.json\",137161\) || exit 2
+
+            echo "Modify jdl to use XML collection in ${GridXmlCollection}"
+            sed -i -e "/nodownload/ s|${GridWorkDir}|${GridXmlCollection}|" $Jdl
+
+            echo "Copy everything we need to grid"
+            {
+                alien_cp "file:${Jdl}" "alien:${GridWorkDir}/" -retry 10
+                alien_cp "file:${Macro}" "alien:${GridWorkDir}/" -retry 10
+                alien_cp "file:analysis.sh" "alien:${GridWorkDir}/" -retry 10
+                alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/" -retry 10
+                alien_cp "file:analysis.root" "alien:${GridWorkDir}/" -retry 10
+            } || exit 2
+
+            echo "Clean up local working dir"
+            {
+                mkdir -p "GridFiles/Dummy"
+                mv "${Jdl}" "GridFiles/Dummy/"
+                mv "${Macro}" "GridFiles/Dummy/"
+                mv "analysis.sh" "GridFiles/Dummy/"
+                mv "analysis_validation.sh" "GridFiles/Dummy/"
+                mv "analysis.root" "GridFiles/Dummy/"
+            } || exit 3
+        fi
 fi
 
 # submit jobs run by run
 for Run in $Runs; do
+
+    # skip if run is already submitted
+    if [ "$(jq -r --arg Run "${Run:=-2}" 'has($Run)' $StatusFile)" == "true" ];then
+                continue
+    fi
 
 	until CheckQuota.sh; do
 		GridTimeout.sh $LongTimeout

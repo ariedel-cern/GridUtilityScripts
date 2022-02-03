@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 13.01.2022
+# Last Modified Date: 03.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -60,19 +60,20 @@ export -f Check_Integrity
 Status=""
 Dir=""
 FilesChecked=""
+GridOutputFile="$(jq -r '.task.GridOutputFile' config.json)"
 
 for Run in $Runs; do
 
 	Dir="${LocalOutputDir}/${Run}"
 	echo "Checking .root files in $Dir"
 
-	find $Dir -type f -name "*.root" | parallel --progress --bar Check_Integrity {} $FileLog >>$FileLog
+	find $Dir -type f -name $GridOutputFile | parallel --progress --bar Check_Integrity {} $FileLog >>$FileLog
 
-	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
+	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | wc -l)
 
 	{
 		flock 100
-		jq --arg Run $Run --arg FilesChecked $FilesChecked 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
+		jq --arg Run $Run --arg FilesChecked ${FilesChecked:=0} 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
 done
 

@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 28.01.2022
+# Last Modified Date: 02.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -58,10 +58,10 @@ for Run in $Runs; do
 	echo "Reincarnate Run $Run"
 
 	# # if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
-	# if [ "$Status" == "DONE" ]; then
-	# 	echo "$Run is DONE!"
-	# 	continue
-	# fi
+	if [ "$Status" == "DONE" ]; then
+		echo "$Run is DONE!"
+		continue
+	fi
 
 	# iterate over reincarnations
 	Indices="$(jq -r 'keys_unsorted[-4:]|length' <<<$Data)"

@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 13.01.2022
+# Last Modified Date: 03.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # copy files from grid to local machine run by run
@@ -24,8 +24,8 @@ CopyRetries="$(jq -r '.misc.CopyRetries' config.json)"
 
 # loop variables
 Data=""
-Status=""
 FilesCopied=""
+FilesMerged=""
 
 for Run in $Runs; do
 
@@ -34,18 +34,19 @@ for Run in $Runs; do
 		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	} 100>$LockFile
 
-	Status="$(jq -r '.Status' <<<$Data)"
-	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
+    FilesMerged="$(jq -r '.Merged' <<<$Data)"
+    [ "${FilesMerged:=0}" -ge 1 ] && continue
 
 	echo "Copy Files from Run: $Run"
+    mkdir -p "${LocalOutputDir}/${Run}"
 
 	alien_cp "alien:${GridOutputDir}/${Run}" "file:${LocalOutputDir}" -glob "*.root" -T $CopyJobs -retry $CopyRetries
 
-	FilesCopied=$(find "${LocalOutputDir}/${Run}" -type f -name "*.root" | wc -l)
+    FilesCopied=$(find "${LocalOutputDir}/${Run}" -type f -name $(jq -r '.task.GridOutputFile' config.json) | wc -l)
 
 	{
 		flock 100
-		jq --arg Run "$Run" --arg FilesCopied "$FilesCopied" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
+		jq --arg Run "$Run" --arg FilesCopied "${FilesCopied:=0}" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
 
 done
