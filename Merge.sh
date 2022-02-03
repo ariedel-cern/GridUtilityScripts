@@ -24,7 +24,6 @@ FilesCopied=""
 FilesChecked=""
 FilesMerged=""
 
-
 for Run in $Runs; do
 
 	{
@@ -33,15 +32,15 @@ for Run in $Runs; do
 	} 100>$LockFile
 
 	Status="$(jq -r '.Status' <<<$Data)"
-    FilesMerged="$(jq -r '.Merged' <<<$Data)"
+	FilesMerged="$(jq -r '.Merged' <<<$Data)"
 	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
 	FilesChecked="$(jq -r '.FilesChecked' <<<$Data)"
 
-    [ "${Status:=RUNNING}" == "RUNNING" ] && continue
-    [ "${FilesMerged:=0}" -ge 1 ] && continue
-    [ "$((${FilesCopied:=0} - 3))" -ge "$FilesChecked" ] && contiune
+	[ "${Status:=RUNNING}" == "RUNNING" ] && continue
+	[ "${FilesMerged:=0}" -ge 1 ] && continue
+	[ "$((${FilesCopied:=0} - 3))" -ge "$FilesChecked" ] && contiune
 
-    RunDir="$(jq -r '.task.GridOutputDir' config.json)/${Run}"
+	RunDir="$(jq -r '.task.GridOutputDir' config.json)/${Run}"
 
 	# go into subdirectory
 	pushd $RunDir
@@ -50,22 +49,22 @@ for Run in $Runs; do
 
 	# construct filename for merged file
 	MergedFile="$(basename $Run)_Merged.root"
-    FilesToMerge="$(find . -type f -name "$OutputFile")"
+	FilesToMerge="$(find . -type f -name "$OutputFile")"
 
 	# merge files using hadd in parallel!!!
 	hadd -f -k -j $(nproc) $MergedFile <<<$FilesToMerge
 
-    FilesMerged="$(wc -l <<<$FilesToMerge)"
+	FilesMerged="$(wc -l <<<$FilesToMerge)"
 
-    find . -type f -name "$OutputFile" -delete
+	find . -type f -name "$OutputFile" -delete
 
 	# go back
 	popd
 
-    {
-            flock 100
-            jq --arg Run "$Run" --arg FilesMerged "${FilesMerged:=0}" 'setpath([$Run,"Merged"];$FilesMerged)' $StatusFile | sponge $StatusFile
-    } 100>$LockFile
+	{
+		flock 100
+		jq --arg Run "$Run" --arg FilesMerged "${FilesMerged:=0}" 'setpath([$Run,"Merged"];$FilesMerged)' $StatusFile | sponge $StatusFile
+	} 100>$LockFile
 
 done
 

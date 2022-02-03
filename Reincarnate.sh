@@ -147,10 +147,10 @@ for Run in $Runs; do
 		MasterjobIdRe0="$(jq -r --arg Re $Re0 '.[$Re].MasterjobID' <<<$Data)"
 		FailedSubjobs="$(alien_ps -m $MasterjobIdRe0 | awk ' $4!~"D" { print $2 }' | tr '\n' ',' | sed s'/,$//')"
 
-        # check if FailedSubjobs are empty
-        if [ -z "$FailedSubjobs" ];then
-            break
-        fi
+		# check if FailedSubjobs are empty
+		if [ -z "$FailedSubjobs" ]; then
+			break
+		fi
 
 		# get xml collection of all failed AODs
 		# TODO check if certs and password are there
@@ -167,12 +167,12 @@ for Run in $Runs; do
 		echo "Download XML collection of failed subjobs"
 		curl --retry 10 -L -k --key "$HOME/.globus/userkey.pem" --cert "$HOME/.globus/usercert.pem:$(cat $HOME/.globus/grid)" "http://alimonitor.cern.ch/jobs/xmlof.jsp?pid=${FailedSubjobs}" --output "$XmlCollection"
 
-        # check if we managed to download a xml collection
-        # if not, break for now
-        if grep -q "Please pass a pid" "$XmlCollection"; then
-            cd -
-            break
-        fi
+		# check if we managed to download a xml collection
+		# if not, break for now
+		if grep -q "Please pass a pid" "$XmlCollection"; then
+			cd -
+			break
+		fi
 
 		# get number of AODs which failed in this reincarnation
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"

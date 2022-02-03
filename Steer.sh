@@ -16,11 +16,11 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 
 echo "Steering Analysis Train..."
 
- # submit jobs to the grid -> 0. Reincarnation
+# submit jobs to the grid -> 0. Reincarnation
 (
-        echo "PID:" $BASHPID
-        SubmitJobs.sh
-        echo "ALL RUNS SUBMITTED"
+	echo "PID:" $BASHPID
+	SubmitJobs.sh
+	echo "ALL RUNS SUBMITTED"
 ) &>"Submit.log" &
 
 echo "Wait for the first run to be submitted..."
@@ -52,12 +52,11 @@ echo "First run was submitted, start background jobs..."
 	echo "COPY DONE"
 ) &>"Copy.log" &
 
-
 # merge files run by run
 (
 	echo "PID:" $BASHPID
 	while jq '.[].Merged' $StatusFile | grep -q "0"; do
-        Merge.sh
+		Merge.sh
 		GridTimeout.sh "$(jq -r '.misc.LongTimeout' config.json)"
 	done
 	echo "MERGE DONE"
