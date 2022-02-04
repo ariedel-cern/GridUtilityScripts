@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 03.02.2022
+# Last Modified Date: 04.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -173,7 +173,7 @@ for Run in $Runs; do
 	# update status file
 	{
 		flock 100
-		jq --arg Run "${Run:=-2}" --arg JobId "${JobId:=-2}" --arg NumberAOD "${NumberAOD:=-2}" '.[$Run]={"Status":"RUNNING","FilesCopied":"0","FilesChecked":"0","Merged":"0", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":$NumberAOD,"AODError":-1},"R1":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R2":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1},"R3":{"MasterjobID":-1, "Status":"NOT_SUBMITTED","SubjobTotal":-1,"SubjobDone":-1,"SubjobActive":-1,"SubjobWaiting":-1,"SubjobError":-1,"AODTotal":-1,"AODError":-1}}' $StatusFile | sponge $StatusFile
+		jq --arg Run "${Run:=-2}" --arg JobId "${JobId:=-2}" --arg NumberAOD "${NumberAOD:=-2}" '.[$Run]={"Status":"RUNNING","FilesCopied":"0","FilesChecked":"0","Merged":"0", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":$NumberAOD,"AODError":"-44"},"R1":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"},"R2":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"},"R3":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"}}' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
 
 	# dont wait after last job was submitted

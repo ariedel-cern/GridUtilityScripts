@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 02.02.2022
+# Last Modified Date: 04.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -57,7 +57,7 @@ for Run in $Runs; do
 
 	echo "Reincarnate Run $Run"
 
-	# # if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
+	# if the run is already done, i.e. all reincarnations or every subjob in a given reincarnation succeeded, we do not update anymore
 	if [ "$Status" == "DONE" ]; then
 		echo "$Run is DONE!"
 		continue
@@ -81,7 +81,7 @@ for Run in $Runs; do
 		# check if a reincarnation is still ongoing
 		if [ ! "$StatusRe0" == "DONE" ]; then
 			# now check if there are jobs running
-			if [ "$SubjobActiveRe0" -ge 1 ]; then
+			if [ "${SubjobActiveRe0#-}" -gt 0 ]; then
 				# if there are, we do not need to reincarnate
 				echo "Reincarnation $Re0 still going, break..."
 				break
@@ -98,18 +98,18 @@ for Run in $Runs; do
 		# if we passed this check, this means the reincarnation is done
 
 		# check if this is the last reincarnation
-		if [ "$Re0" == "$LastRe" ]; then
+		if [ "${Re0:=R0}" == "${LastRe:=R3}" ]; then
 			echo "Last Reincarnation $Re0, Run $Run is DONE!"
 			{
 				flock 100
-				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "${SubjobErrorRe0:=-2}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
+				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "${SubjobErrorRe0:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
 				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			} 100>$LockFile
 			break
 		fi
 
 		# check if the reincarnation finished without a subjob in error
-		if [ "$SubjobErrorRe0" -eq 0 ]; then
+		if [ "${SubjobErrorRe0:=-44}" -eq 0 ]; then
 			echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
 			{
 				flock 100
@@ -122,12 +122,12 @@ for Run in $Runs; do
 		# if we end up here, this means this is not the last reincarnation,
 		# the current one is done and there are subjob that failed
 		# now we need to check if we already kicked off the next reincarnation
-		Re1="R$((Index + 1))"
+		Re1="R$(($Index + 1))"
 		MasterjobIdRe1="$(jq -r --arg Re $Re1 '.[$Re].MasterjobID' <<<$Data)"
 		StatusRe1="$(jq -r --arg Re $Re1 '.[$Re].Status' <<<$Data)"
 
-		# if the next reincarnation is running, the masterjob id will not be -1
-		if [ "$MasterjobIdRe1" -ne -1 ]; then
+		# if the next reincarnation is running, the masterjob id will not be -44
+		if [ "$MasterjobIdRe1" -ne "-44" ]; then
 			echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
 			continue
 		fi
@@ -144,7 +144,7 @@ for Run in $Runs; do
 		GridXmlCollection="$(jq -r '.task.GridXmlCollection' config.json)"
 
 		# get all failed subjobs, including the ones we do not wait for
-		MasterjobIdRe0="$(jq -r --arg Re $Re0 '.[$Re].MasterjobID' <<<$Data)"
+		MasterjobIdRe0="$(jq -r --arg Re "$Re0" '.[$Re].MasterjobID' <<<$Data)"
 		FailedSubjobs="$(alien_ps -m $MasterjobIdRe0 | awk ' $4!~"D" { print $2 }' | tr '\n' ',' | sed s'/,$//')"
 
 		# check if FailedSubjobs are empty
@@ -169,7 +169,7 @@ for Run in $Runs; do
 
 		# check if we managed to download a xml collection
 		# if not, break for now
-		if grep -q "Please pass a pid" "$XmlCollection"; then
+		if ! grep -q "event name" "$XmlCollection"; then
 			cd -
 			break
 		fi
@@ -213,9 +213,9 @@ for Run in $Runs; do
 		{
 			flock 100
 			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "${MasterjobIdRe1:=-2}" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "${FailedAODs:=-2}" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
-			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "${FailedAODs:=-2}" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg ID "${MasterjobIdRe1:=-44}" 'setpath([$Run,$Re,"MasterjobID"];$ID)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re1" --arg AOD "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODTotal"];$AOD)' $StatusFile | sponge $StatusFile
+			jq --arg Run "$Run" --arg Re "$Re0" --arg AOD "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODError"];$AOD)' $StatusFile | sponge $StatusFile
 			jq --arg Run "$Run" --arg Re "$Re0" 'setpath([$Run,$Re,"Status"];"DONE")' $StatusFile | sponge $StatusFile
 		} 100>$LockFile
 

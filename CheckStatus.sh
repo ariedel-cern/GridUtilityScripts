@@ -2,7 +2,7 @@
 # File              : CheckStatus.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 20.12.2021
-# Last Modified Date: 19.01.2022
+# Last Modified Date: 04.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check status of analysis train
@@ -82,10 +82,10 @@ for Run in $Runs; do
 			RunDoneAOD=$(($RunDoneAOD + $(jq -r --arg Re $Reincarnation '.[$Re].AODTotal' <<<$Data) - $(jq -r --arg Re $Reincarnation '.[$Re].AODError' <<<$Data)))
 
 			RunSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobTotal' <<<$Data)
-			TotalSubjob=$(($TotalSubjob + $RunSubjob))
+			TotalSubjob=$((${TotalSubjob:=0} + ${RunSubjob:=0}))
 
 			RunDoneSubjob=$(jq -r --arg Re $Reincarnation '.[$Re].SubjobDone' <<<$Data)
-			TotalDoneSubjob=$(($TotalDoneSubjob + $RunDoneSubjob))
+			TotalDoneSubjob=$((${TotalDoneSubjob:=0} + ${RunDoneSubjob:0}))
 
 			RunSubjobSucess=$(echo "scale=2; ${RunDoneSubjob:=0}/${RunSubjob:=1}" | bc)
 			RunAODSuccess=$(echo "scale=2; ${RunDoneAOD:=0}/${RunAOD:=1}" | bc)
@@ -97,7 +97,7 @@ for Run in $Runs; do
 
 	done
 
-	TotalDoneAOD=$(($TotalDoneAOD + $RunDoneAOD))
+	TotalDoneAOD=$((${TotalDoneAOD:=0} + ${RunDoneAOD:=0}))
 
 	# string for header before the first row
 	[ $Bool -eq 0 ] && Table+="$Header\n" && Bool="1"
@@ -109,8 +109,8 @@ echo "##########################################################################
 echo -e $Table | column -s ',' -t
 echo "###############################################################################"
 
-TotalSubjobSuccess=$(echo "scale=2; $TotalDoneSubjob/$TotalSubjob" | bc)
-TotalAODSuccess=$(echo "scale=2; $TotalDoneAOD/$TotalAOD" | bc)
+TotalSubjobSuccess=$(echo "scale=2; ${TotalDoneSubjob:=0}/${TotalSubjob:=1}" | bc)
+TotalAODSuccess=$(echo "scale=2; ${TotalDoneAOD:=0}/${TotalAOD:=1}" | bc)
 
 cat <<EOF | column -s ',' -t
 Total stats,
