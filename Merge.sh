@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 03.02.2022
+# Last Modified Date: 04.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -16,7 +16,7 @@ echo "Merging $(jq -r '.task.GridOutputFile' config.json) run by run in $(jq -r 
 
 MergedFile=""
 OutputFile="$(jq -r '.task.GridOutputFile' config.json)"
-Runs="$(jq -r '.Runs[]' config.json)"
+Runs="$(jq -r 'keys[]' $StatusFile)"
 
 Data=""
 Status=""
@@ -32,13 +32,13 @@ for Run in $Runs; do
 	} 100>$LockFile
 
 	Status="$(jq -r '.Status' <<<$Data)"
-	FilesMerged="$(jq -r '.Merged' <<<$Data)"
 	FilesCopied="$(jq -r '.FilesCopied' <<<$Data)"
 	FilesChecked="$(jq -r '.FilesChecked' <<<$Data)"
+	FilesMerged="$(jq -r '.Merged' <<<$Data)"
 
-	[ "${Status:=RUNNING}" == "RUNNING" ] && continue
-	[ "${FilesMerged:=0}" -ge 1 ] && continue
-	[ "$((${FilesCopied:=0} - 3))" -ge "$FilesChecked" ] && contiune
+	[ "${Status:=RUNNING}" != "DONE" ] && continue
+	[ "${FilesMerged:=0}" -ge "1" ] && continue
+	[ "$((${FilesCopied:=10} - 3))" -le "${FilesChecked:=0}" ] && continue
 
 	RunDir="$(jq -r '.task.GridOutputDir' config.json)/${Run}"
 
@@ -52,11 +52,18 @@ for Run in $Runs; do
 	FilesToMerge="$(find . -type f -name "$OutputFile")"
 
 	# merge files using hadd in parallel!!!
-	hadd -f -k -j $(nproc) $MergedFile <<<$FilesToMerge
+	hadd -f -k -j $(nproc) $MergedFile $FilesToMerge || exit 1
 
+    # create backup, just in cas3
+	cp "${MergedFile}" "${MergedFile}.bak"
+
+    # count number of merge files
 	FilesMerged="$(wc -l <<<$FilesToMerge)"
 
+    # delete smaller root files (safing space on the local disk)
 	find . -type f -name "$OutputFile" -delete
+    # delete all empty directories
+	find . -empty -type d -delete
 
 	# go back
 	popd

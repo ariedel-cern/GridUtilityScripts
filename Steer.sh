@@ -7,8 +7,6 @@
 
 # master steering script for analysis
 
-set -euo pipefail
-
 [ ! -f config.json ] && echo "No config file!!!" && exit 1
 StatusFile="$(jq -r '.StatusFile' config.json)"
 
@@ -33,7 +31,7 @@ echo "First run was submitted, start background jobs..."
 # update status of running jobs and reincarnate them if necessary
 (
 	echo "PID:" $BASHPID
-	while jq '.[].Merged' $StatusFile | grep -q "0"; do
+	while jq '.[].Merged' $StatusFile | grep -wq "0"; do
 		UpdateStatus.sh
 		Reincarnate.sh
 		GridTimeout.sh "$(jq -r '.misc.LongTimeout' config.json)"
@@ -44,23 +42,14 @@ echo "First run was submitted, start background jobs..."
 # copy file from grid
 (
 	echo "PID:" $BASHPID
-	while jq '.[].Merged' $StatusFile | grep -q "0"; do
+	while jq '.[].Merged' $StatusFile | grep -wq "0"; do
 		CopyFromGrid.sh
 		CheckFileIntegrity.sh
+		Merge.sh
 		GridTimeout.sh "$(jq -r '.misc.LongTimeout' config.json)"
 	done
 	echo "COPY DONE"
 ) &>"Copy.log" &
-
-# merge files run by run
-(
-	echo "PID:" $BASHPID
-	while jq '.[].Merged' $StatusFile | grep -q "0"; do
-		Merge.sh
-		GridTimeout.sh "$(jq -r '.misc.LongTimeout' config.json)"
-	done
-	echo "MERGE DONE"
-) &>"Merge.log" &
 
 echo "Analysis Train still going..."
 wait

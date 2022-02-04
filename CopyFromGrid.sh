@@ -39,6 +39,7 @@ for Run in $Runs; do
 
 	echo "Copy Files from Run: $Run"
 	mkdir -p "${LocalOutputDir}/${Run}"
+    alien_mkdir -p "${GridOutputDir}/${Run}"
 
 	alien_cp "alien:${GridOutputDir}/${Run}" "file:${LocalOutputDir}" -glob "*.root" -T $CopyJobs -retry $CopyRetries
 
