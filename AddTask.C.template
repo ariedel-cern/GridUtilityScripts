@@ -9,7 +9,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-void AddTask(const char *ConfigFileName Int_t RunNumber, Float_t CenterMin,
+void AddTask(const char *ConfigFileName, Int_t RunNumber, Float_t CenterMin,
              Float_t CenterMax) {
 
   // Get the pointer to the existing analysis manager
