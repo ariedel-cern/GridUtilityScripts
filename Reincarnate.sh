@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 04.02.2022
+# Last Modified Date: 07.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -81,6 +81,7 @@ for Run in $Runs; do
 		# check if a reincarnation is still ongoing
 		if [ ! "$StatusRe0" == "DONE" ]; then
 			# now check if there are jobs running
+			SubjobActiveRe0="${SubjobActive:=-44}"
 			if [ "${SubjobActiveRe0#-}" -gt 0 ]; then
 				# if there are, we do not need to reincarnate
 				echo "Reincarnation $Re0 still going, break..."
@@ -109,7 +110,7 @@ for Run in $Runs; do
 		fi
 
 		# check if the reincarnation finished without a subjob in error
-		if [ "${SubjobErrorRe0:=-44}" -eq 0 ]; then
+		if [ "${SubjobErrorRe0:=-44}" -eq 0 -a "${StatusRe0:=SPLIT}" == "DONE" ]; then
 			echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
 			{
 				flock 100
@@ -152,16 +153,12 @@ for Run in $Runs; do
 			break
 		fi
 
-		# get xml collection of all failed AODs
-		# TODO check if certs and password are there
-
+		# change to local work dir
 		if [ "$UseWeights" = "false" ]; then
 			LocalWorkDir="GridFiles/Dummy"
 		else
 			LocalWorkDir="GridFiles/${Run}"
 		fi
-
-		# change to local work dir
 		cd $LocalWorkDir
 
 		echo "Download XML collection of failed subjobs"
@@ -176,9 +173,6 @@ for Run in $Runs; do
 
 		# get number of AODs which failed in this reincarnation
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
-
-		# kill waiting jobs
-		alien_ps -m $MasterjobIdRe0 | awk ' $4=="W" { print $2 }' | parallel --bar --progress "alien.py kill {}"
 
 		# create new working directory on grid
 		alien_mkdir -p "$GridOutputDirNew"
@@ -195,8 +189,13 @@ for Run in $Runs; do
 		sed -i -e "/TTL/c TTL = \"$TTL\"; " $JdlFileName
 
 		# upload to grid
-		alien_cp "file:$JdlFileName" "alien:${GridOutputDirNew}/"
-		alien_cp "file:$XmlCollection" "alien:${GridOutputDirNew}/"
+		{
+			timeout 180 alien_cp "file:$JdlFileName" "alien:${GridOutputDirNew}/" -retry 10
+			timeout 180 alien_cp "file:$XmlCollection" "alien:${GridOutputDirNew}/" -retry 10
+		} || exit 2
+
+		# kill waiting jobs
+		alien_ps -m $MasterjobIdRe0 | awk ' $4=="W" { print $2 }' | parallel --bar --progress "alien.py kill {}"
 
 		# submit new masterjob
 		MasterjobIdRe1="null"

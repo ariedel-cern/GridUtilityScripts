@@ -2,7 +2,7 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 03.02.2022
+# Last Modified Date: 07.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis

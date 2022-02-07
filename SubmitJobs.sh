@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 04.02.2022
+# Last Modified Date: 07.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -43,7 +43,7 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 LockFile="$(jq -r '.LockFile' config.json)"
 UseWeights=$(jq -r '.task.UseWeights' config.json)
 
-if jq '.[].Status' $StatusFile  | grep -vq "RUNNING"; then
+if ! jq '.[].Status' $StatusFile | grep -q "RUNNING"; then
 
 	echo "clean up remote working dir"
 	alien_rm -R -f "alien:${GridWorkDir}"
@@ -56,7 +56,6 @@ if jq '.[].Status' $StatusFile  | grep -vq "RUNNING"; then
 	echo "################################################################################"
 
 	if [ "$UseWeights" = "false" ]; then
-
 
 		echo "Do not use run specific weights, create dummy working dir for all runns"
 		echo "Run steering macros in offline mode to generate necessary files"
@@ -92,16 +91,13 @@ for Run in $Runs; do
 
 	# skip if run is already submitted
 	if [ "$(jq -r --arg Run "${Run:=-2}" 'has($Run)' $StatusFile)" == "true" ]; then
+		((RunCounter++))
 		continue
 	fi
 
 	# refresh after every iteration so they can be change while the analysis is still running
 	LongTimeout="$(jq -r '.misc.LongTimeout' config.json)"
 	ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
-
-	until CheckQuota.sh; do
-		GridTimeout.sh $LongTimeout
-	done
 
 	echo "################################################################################"
 	echo "Submit Run $Run with Task $BaseName"
@@ -125,11 +121,11 @@ for Run in $Runs; do
 		echo "Copy everything we need to grid"
 		{
 			alien_mkdir -p "alien:${GridWorkDir}/${Run}/"
-			alien_cp "file:${Jdl}" "alien:${GridWorkDir}/${Run}/" -retry 10
-			alien_cp "file:${Macro}" "alien:${GridWorkDir}/${Run}/" -retry 10
-			alien_cp "file:analysis.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
-			alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
-			alien_cp "file:analysis.root" "alien:${GridWorkDir}/${Run}/" -retry 10
+			timeout 180 alien_cp "file:${Jdl}" "alien:${GridWorkDir}/${Run}/" -retry 10
+			timeout 180 alien_cp "file:${Macro}" "alien:${GridWorkDir}/${Run}/" -retry 10
+			timeout 180 alien_cp "file:analysis.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
+			timeout 180 alien_cp "file:analysis_validation.sh" "alien:${GridWorkDir}/${Run}/" -retry 10
+			timeout 180 alien_cp "file:analysis.root" "alien:${GridWorkDir}/${Run}/" -retry 10
 		} || exit 2
 
 		echo "Clean up local working directory"
@@ -143,6 +139,10 @@ for Run in $Runs; do
 		} || exit 4
 
 	fi
+
+	until CheckQuota.sh; do
+		GridTimeout.sh $LongTimeout
+	done
 
 	JobId="null"
 
