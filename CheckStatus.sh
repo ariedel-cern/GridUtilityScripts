@@ -2,7 +2,7 @@
 # File              : CheckStatus.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 20.12.2021
-# Last Modified Date: 04.02.2022
+# Last Modified Date: 08.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check status of analysis train
@@ -35,6 +35,9 @@ RunAODSuccess="0"
 TotalSubjobSuccess="0"
 RunSubjobSucess="0"
 
+NumberOfRuns="0"
+NuberOfDoneRuns="0"
+
 Column=""
 Status=""
 Table=""
@@ -53,6 +56,12 @@ for Run in $Runs; do
 	# clear variables
 	Column=""
 	RunDoneAOD="0"
+
+	((NumberOfRuns++))
+
+	if [ "$(jq -r '.Status' <<<$Data)" == "DONE" ]; then
+		((NuberOfDoneRuns++))
+	fi
 
 	# First entry in the row is run number
 	Column+="$Run,"
@@ -113,13 +122,14 @@ TotalSubjobSuccess=$(echo "scale=2; ${TotalDoneSubjob:=0}/${TotalSubjob:=1}" | b
 TotalAODSuccess=$(echo "scale=2; ${TotalDoneAOD:=0}/${TotalAOD:=1}" | bc)
 
 cat <<EOF | column -s ',' -t
-Total stats,
-Total number of AODs,$TotalAOD 
-Total number of processed AODs,$TotalDoneAOD
-Total AOD success rate,$(printf "%1.2f" $TotalAODSuccess)
-Total number of submitted subjobs,$TotalSubjob
-Total number of successfull subjobs,$TotalDoneSubjob
-Total Subjob Success Rate,$(printf "%1.2f" $TotalSubjobSuccess)
+Summary,
+Runs,${NuberOfDoneRuns}/${NumberOfRuns}
+Number of AODs,$TotalAOD 
+Number of processed AODs,$TotalDoneAOD
+AOD success rate,$(printf "%1.2f" $TotalAODSuccess)
+Number of submitted subjobs,$TotalSubjob
+Number of successfull subjobs,$TotalDoneSubjob
+Subjob Success Rate,$(printf "%1.2f" $TotalSubjobSuccess)
 EOF
 
 echo "###############################################################################"
