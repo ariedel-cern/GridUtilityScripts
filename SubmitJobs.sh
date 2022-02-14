@@ -148,9 +148,9 @@ for Run in $Runs; do
 
 	until [ "$JobId" != "null" ]; do
 		if [ "$UseWeights" == "true" ]; then
-			JobId=$(alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+			JobId=$(timeout 20 alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
 		else
-			JobId=$(alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+			JobId=$(timeout 20 alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
 		fi
 	done
 
@@ -171,6 +171,7 @@ for Run in $Runs; do
 	echo "Submitted $RunCounter/$NumberOfRuns Runs"
 
 	# update status file
+	echo "Waiting for lock..."
 	{
 		flock 100
 		jq --arg Run "${Run:=-2}" --arg JobId "${JobId:=-2}" --arg NumberAOD "${NumberAOD:=-2}" '.[$Run]={"Status":"RUNNING","FilesCopied":"0","FilesChecked":"0","Merged":"0", "R0":{"MasterjobID":$JobId, "Status":"SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":$NumberAOD,"AODError":"-44"},"R1":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"},"R2":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"},"R3":{"MasterjobID":"-44", "Status":"NOT_SUBMITTED","SubjobTotal":"-44","SubjobDone":"-44","SubjobActive":"-44","SubjobWaiting":"-44","SubjobError":"-44","AODTotal":"-44","AODError":"-44"}}' $StatusFile | sponge $StatusFile

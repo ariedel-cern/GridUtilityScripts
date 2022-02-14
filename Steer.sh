@@ -2,7 +2,7 @@
 # File              : Steer.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 07.02.2022
+# Last Modified Date: 08.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # master steering script for analysis
@@ -17,7 +17,9 @@ echo "Steering Analysis Train..."
 # submit jobs to the grid -> 0. Reincarnation
 (
 	echo "PID:" $BASHPID
-	SubmitJobs.sh
+	until SubmitJobs.sh; do
+		GridTimeout.sh "$(jq -r '.misc.LongTimeout' config.json)"
+	done
 	echo "ALL RUNS SUBMITTED"
 ) &>"Submit.log" &
 
@@ -54,5 +56,8 @@ echo "First run was submitted, start background jobs..."
 echo "Analysis Train still going..."
 wait
 echo "Analysis Train arrived..."
+
+echo "Reterminate output files"
+ReTerminate.sh
 
 exit 0

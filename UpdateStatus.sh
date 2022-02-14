@@ -12,6 +12,7 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
 Runs=""
+echo "Waiting for lock..."
 {
 	flock 100
 	cp $StatusFile "${StatusFile}.bak"
@@ -56,12 +57,15 @@ for Run in $Runs; do
 	echo "Update Run: $Run"
 
 	# get data of the run
+	echo "Waiting for lock..."
 	{
 		flock 100
 		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
 	} 100>$LockFile
 
 	Status="$(jq -r '.Status' <<<$Data)"
+
+	[ "$Status" == "DONE" ] && continue
 
 	# iterate over reincarnations
 	Reincarnations="$(jq -r 'keys_unsorted[-4:][]' <<<$Data)"
@@ -80,6 +84,7 @@ for Run in $Runs; do
 
 		echo "with Reincarnation $Reincarnation -> $MasterjobID"
 		# update values
+		echo "Waiting for lock..."
 		{
 			flock 100
 			jq --arg Run "$Run" --arg Re "$Reincarnation" --arg Status "${MasterjobStatus:=RUNNING}" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile

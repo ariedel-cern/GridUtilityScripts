@@ -12,6 +12,7 @@ LockFile="$(jq -r '.LockFile' config.json)"
 StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
+echo "Waiting for lock..."
 {
 	flock 100
 	Runs="$(jq -r 'keys[]' $StatusFile)"
@@ -49,6 +50,7 @@ for Run in $Runs; do
 	[ ! CheckQuota.sh ] && continue
 
 	# get data of the run
+	echo "Waiting for lock..."
 	{
 		flock 100
 		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
@@ -101,6 +103,7 @@ for Run in $Runs; do
 		# check if this is the last reincarnation
 		if [ "${Re0:=R0}" == "${LastRe:=R3}" ]; then
 			echo "Last Reincarnation $Re0, Run $Run is DONE!"
+			echo "Waiting for lock..."
 			{
 				flock 100
 				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "${SubjobErrorRe0:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
@@ -112,6 +115,7 @@ for Run in $Runs; do
 		# check if the reincarnation finished without a subjob in error
 		if [ "${SubjobErrorRe0:=-44}" -eq 0 -a "${StatusRe0:=SPLIT}" == "DONE" ]; then
 			echo "Reincarnation $Re0 finished without a failed subjob, Run $Run is DONE!"
+			echo "Waiting for lock..."
 			{
 				flock 100
 				jq --arg Run "$Run" --arg Re "$Re0" --arg Zero "0" 'setpath([$Run,$Re,"AODError"];$Zero)' $StatusFile | sponge $StatusFile
@@ -209,6 +213,7 @@ for Run in $Runs; do
 		echo "Submitted new Masterjob with ID $MasterjobIdRe1"
 
 		# update status file
+		echo "Waiting for lock..."
 		{
 			flock 100
 			jq --arg Run "$Run" --arg Re "$Re1" --arg Status "SUBMITTED" 'setpath([$Run,$Re,"Status"];$Status)' $StatusFile | sponge $StatusFile

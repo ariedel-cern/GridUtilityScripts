@@ -2,7 +2,7 @@
 # File              : CopyFromGrid.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 16.06.2021
-# Last Modified Date: 03.02.2022
+# Last Modified Date: 07.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # copy files from grid to local machine run by run
@@ -13,6 +13,7 @@ StatusFile="$(jq -r '.StatusFile' config.json)"
 [ ! -f $StatusFile ] && echo "No $StatusFile file!!!" && exit 1
 
 # get variables from config file
+echo "Waiting for lock..."
 {
 	flock 100
 	Runs="$(jq -r 'keys[]' $StatusFile)"
@@ -29,6 +30,7 @@ FilesMerged=""
 
 for Run in $Runs; do
 
+	echo "Waiting for lock..."
 	{
 		flock 100
 		Data="$(jq -r --arg Run "$Run" '.[$Run]' $StatusFile)"
@@ -39,12 +41,13 @@ for Run in $Runs; do
 
 	echo "Copy Files from Run: $Run"
 	mkdir -p "${LocalOutputDir}/${Run}"
-    alien_mkdir -p "${GridOutputDir}/${Run}"
+	alien_mkdir -p "${GridOutputDir}/${Run}"
 
 	alien_cp "alien:${GridOutputDir}/${Run}" "file:${LocalOutputDir}" -glob "*.root" -T $CopyJobs -retry $CopyRetries
 
 	FilesCopied=$(find "${LocalOutputDir}/${Run}" -type f -name $(jq -r '.task.GridOutputFile' config.json) | wc -l)
 
+	echo "Waiting for lock..."
 	{
 		flock 100
 		jq --arg Run "$Run" --arg FilesCopied "${FilesCopied:=0}" 'setpath([$Run,"FilesCopied"];$FilesCopied)' $StatusFile | sponge $StatusFile
