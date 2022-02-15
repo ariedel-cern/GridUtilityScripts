@@ -39,7 +39,7 @@ Check_Integrity() {
 	fi
 
 	# check file
-	local Timeout=10
+	local Timeout=20
 	{
 		timeout $Timeout file -E $1 || Flag=1
 		timeout $Timeout rootls $1 || Flag=1
