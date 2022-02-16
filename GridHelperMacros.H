@@ -2,31 +2,20 @@
  * File              : GridHelperMacros.H
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.10.2021
- * Last Modified Date: 20.01.2022
+ * Last Modified Date: 16.02.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
 #include <boost/algorithm/string.hpp>
-
-// void IterateList(TList *searchList, TList *resultList, std::string
-// searchString,
-//                  std::string prefix) {
-//   std::string s;
-//   for (auto key : *searchList) {
-//     if (key->IsFolder()) {
-//       IterateList(dynamic_cast<TList *>(key), resultList, searchString,
-//       prefix);
-//     } else {
-//       s = std::string(key->GetName());
-//       if (boost::contains(s, searchString)) {
-//         s = prefix + s;
-//         resultList->Add(key->Clone(s.c_str()));
-//       }
-//     }
-//   }
-// }
+#include <iostream>
+#include <nlohmann/json.hpp>
 
 TObject *IterateList(TList *list, std::string searchString) {
+
+  if (!list) {
+    std::cout << "Passed nullptr to IterateList" << std::endl;
+    return nullptr;
+  }
 
   TObject *obj = nullptr;
   for (auto key : *list) {
@@ -42,40 +31,42 @@ TObject *IterateList(TList *list, std::string searchString) {
   return obj;
 }
 
-// TObject *GetFromOutpuFile(std::string observable){
+TH1 *GetHistFromOutputFile(std::string observable, std::string FileName,
+                           std::string TaskName) {
 
-//   // open output directory
-//   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-//       dataFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
+  std::fstream ConfigFile("config.json");
+  nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
 
-//   TFile *outputFile = new TFile(OutputFileName, "UPDATE");
-//   TList *searchList;
-//   TObject *obj;
-//   TH1D *hist;
-//   std::string searchString(Search);
-//   std::string name;
+  // open file
+  TFile *file = TFile::Open(FileName.c_str(), "READ");
 
-//   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
+  // open output directory
+  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(file->Get(
+      Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
 
-//     std::cout << "Working on Task: " << KeyTask->GetName() << std::endl;
-//     searchList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
-//     name = std::string(KeyTask->GetName());
-//     name += "_";
+  TList *TaskList = dynamic_cast<TList *>(tdirFile->Get(TaskName.c_str()));
 
-//     obj = IterateList(searchList, searchString);
-//     name += obj->GetName();
+  TH1 *result = dynamic_cast<TH1 *>(IterateList(TaskList, observable));
 
-//     hist = dynamic_cast<TH1D *>(obj->Clone(name.c_str()));
+  // close the file
+  file->Close();
 
-//     hist->Write();
-//   }
+  return result;
+}
 
-//   outputFile->Close();
-//   dataFile->Close();
-//   return 0;
-// }
+Double_t BootstrapSigma(TProfile *p) {
+  // compute statistical uncertainty sigma from tprofile
+  // the first n-1 bins contain the subsample means and the nth bin contains the
+  // whole mean
+  Double_t sigma = 0.0;
+  Int_t N = p->GetNbinsX();
 
-// }
+  for (Int_t i = 1; i < N; i++) {
+    sigma += TMath::Power(2, p->GetBinContent(i) - p->GetBinContent(N));
+  }
+
+  return TMath::Sqrt(sigma / (N * (N - 1.)));
+}
 
 void *SetWeights(Int_t RunNumber, Float_t CenMin, Float_t CenMax,
                  AliAnalysisTaskAR *task, const char *id) {

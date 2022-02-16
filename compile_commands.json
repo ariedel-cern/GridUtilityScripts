@@ -1,0 +1,40 @@
+[
+  {
+    "directory": "$GRID_UTILITY_SCRIPTS",
+    "arguments": [
+      "g++",
+      "-o",
+      "test.out",
+      "Bootstrap.C",
+      "-pthread",
+      "-std=c++17",
+      "-m64",
+      "-m64",
+      "-L/scratch/ga45can/tmp/alice/sw/ubuntu2004_x86-64/ROOT/v6-24-06-19/lib",
+      "-lCore",
+      "-lImt",
+      "-lRIO",
+      "-lNet",
+      "-lHist",
+      "-lGraf",
+      "-lGraf3d",
+      "-lGpad",
+      "-lROOTVecOps",
+      "-lTree",
+      "-lTreePlayer",
+      "-lRint",
+      "-lPostscript",
+      "-lMatrix",
+      "-lPhysics",
+      "-lMathCore",
+      "-lThread",
+      "-lMultiProc",
+      "-lROOTDataFrame",
+      "-pthread",
+      "-lm",
+      "-ldl",
+      "-rdynamic"
+    ],
+    "file": "Bootstrap.C"
+  }
+]
