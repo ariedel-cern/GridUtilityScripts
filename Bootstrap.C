@@ -16,9 +16,13 @@
 #include <utility>
 #include <vector>
 
-Int_t Bootstrap(const char *FileSubSamplesName) {
+Int_t Bootstrap(const char *FileSubSamplesName, const char *TaskInput) {
 
-  TH1::AddDirectory(kFALSE);
+  // task to work on
+  std::string Task(TaskInput);
+
+  // fix memory leak?
+  // TH1::AddDirectory(kFALSE);
 
   // load config file
   std::fstream ConfigFile("config.json");
@@ -36,32 +40,16 @@ Int_t Bootstrap(const char *FileSubSamplesName) {
         JSubSamples[it.key()].get<std::vector<std::string>>());
   }
 
-  // get name of all tasks
-  std::vector<std::string> Tasks;
+  // get name of all observables
   TFile *DummyFile = new TFile(SubSampleFileNames.at(0).at(0).c_str(), "READ");
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(DummyFile->Get(
       Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
 
-  TList *TaskList = tdirFile->GetListOfKeys();
-  std::string tmp;
-  for (auto key : *TaskList) {
-    tmp = std::string(key->GetName());
-    if (boost::ends_with(tmp, std::string(".0"))) {
-      std::cout << tmp << std::endl;
-      Tasks.push_back(std::string(key->GetName()));
-    }
-  }
-
-  // get name of all lists of observables
   std::vector<std::pair<std::string, std::vector<Double_t>>> SCs;
-  AliAnalysisTaskAR *Task = new AliAnalysisTaskAR("Dummy");
-
-  Task->GetPointers(dynamic_cast<TList *>(
-      tdirFile->Get(tdirFile->GetListOfKeys()->First()->GetName())));
-
+  AliAnalysisTaskAR *AliTask = new AliAnalysisTaskAR("Dummy");
+  AliTask->GetPointers(dynamic_cast<TList *>(tdirFile->Get(Task.c_str())));
   TList *SCList =
-      dynamic_cast<TList *>(Task->GetFinalResultSymmetricCumulantsList());
-
+      dynamic_cast<TList *>(AliTask->GetFinalResultSymmetricCumulantsList());
   TList *l;
   TH1 *h;
   std::vector<Double_t> BinCenter = {};
@@ -76,7 +64,6 @@ Int_t Bootstrap(const char *FileSubSamplesName) {
       BinCenter.clear();
     }
   }
-
   // close dummy file and start boostrapping
   DummyFile->Close();
 
@@ -92,48 +79,46 @@ Int_t Bootstrap(const char *FileSubSamplesName) {
   std::vector<Double_t> y = {};
   std::vector<Double_t> ey = {};
 
-  // loop over all task
-  for (auto Task : Tasks) {
-    // loop over all histograms of symmetric cumulants
-    for (auto SC : SCs) {
-      // loop over each bin
-      y.clear();
-      ey.clear();
-      bootstrapProfile->Reset();
-      for (Int_t i = 1; i <= SC.second.size(); i++) {
-        std::cout << "Working in Task " << Task << " on " << SC.first
-                  << " in bin " << i << std::endl;
-        // loop over all subsamples
-        for (auto Files : SubSampleFileNames) {
-          // loop over all files in the subsample
-          for (auto File : Files) {
-            currentFile = TFile::Open(File.c_str(), "READ");
-            currentTDirFile = dynamic_cast<TDirectoryFile *>(
-                currentFile->Get(Jconfig["task"]["OutputTDirectory"]
-                                     .get<std::string>()
-                                     .c_str()));
-            currentList =
-                dynamic_cast<TList *>(currentTDirFile->Get(Task.c_str()));
+  // loop over all histograms of symmetric cumulants
+  for (auto SC : SCs) {
+    // loop over each bin
+    y.clear();
+    ey.clear();
+    bootstrapProfile->Reset();
+    for (Int_t i = 1; i <= SC.second.size(); i++) {
+      std::cout << "Working in Task " << Task << " on " << SC.first
+                << " in bin " << i << std::endl;
+      // loop over all subsamples
+      for (auto Files : SubSampleFileNames) {
+        // loop over all files in the subsample
+        for (auto File : Files) {
+          currentFile = TFile::Open(File.c_str(), "READ");
+          currentTDirFile = dynamic_cast<TDirectoryFile *>(currentFile->Get(
+              Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
+          currentList =
+              dynamic_cast<TList *>(currentTDirFile->Get(Task.c_str()));
 
-            currentHist =
-                dynamic_cast<TH1 *>(IterateList(currentList, SC.first));
-            bootstrapProfile->Fill(i - 0.5, currentHist->GetBinContent(i));
-            bootstrapProfile->Fill(SubSampleFileNames.size() + 0.5,
-                                   currentHist->GetBinContent(i));
-            currentFile->Close();
-            delete currentList;
-          }
+          currentHist = dynamic_cast<TH1 *>(IterateList(currentList, SC.first));
+          bootstrapProfile->Fill(i - 0.5, currentHist->GetBinContent(i));
+          bootstrapProfile->Fill(SubSampleFileNames.size() + 0.5,
+                                 currentHist->GetBinContent(i));
+          currentFile->Close();
+          delete currentList;
         }
-        y.push_back(bootstrapProfile->GetBinContent(SubSampleFileNames.size()));
-        ey.push_back(BootstrapSigma(bootstrapProfile));
       }
-      ge = new TGraphErrors(SC.second.size(), SC.second.data(), y.data(), 0,
-                            ey.data());
-      TFile *out = new TFile("Bootstrap.root", "UPDATE");
-      ge->Write((Task + SC.first).c_str());
-      out->Close();
-      delete ge;
+      y.push_back(bootstrapProfile->GetBinContent(SubSampleFileNames.size()));
+      ey.push_back(BootstrapSigma(bootstrapProfile));
     }
+    ge = new TGraphErrors(SC.second.size(), SC.second.data(), y.data(), 0,
+                          ey.data());
+    TFile *out =
+        new TFile((Task + std::string("_Bootstrap.root")).c_str(), "UPDATE");
+    ge->Write((Task + SC.first).c_str());
+    out->Close();
+    delete ge;
+
+    // std::cout << "GOT IT" << std::endl;
+    // std::exit(4);
   }
   return 0;
 }
