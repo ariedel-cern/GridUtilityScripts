@@ -2,12 +2,13 @@
  * File              : Bootstrap.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 27.10.2021
- * Last Modified Date: 16.02.2022
+ * Last Modified Date: 17.02.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
 #include "GridHelperMacros.H"
 #include <boost/algorithm/string.hpp>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -16,109 +17,113 @@
 #include <utility>
 #include <vector>
 
-Int_t Bootstrap(const char *FileSubSamplesName, const char *TaskInput) {
-
-  // task to work on
-  std::string Task(TaskInput);
-
-  // fix memory leak?
-  // TH1::AddDirectory(kFALSE);
+Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
 
   // load config file
   std::fstream ConfigFile("config.json");
   nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
 
-  // load file containig the subsamples
-  std::fstream FileSubSamples(FileSubSamplesName);
-  nlohmann::json JSubSamples = nlohmann::json::parse(FileSubSamples);
+  // open all files
+  std::vector<TFile *> Files;
+  std::fstream FileList(ListOfFiles);
+  std::string Line;
+  while (std::getline(FileList, Line)) {
+    Files.push_back(TFile::Open(Line.c_str(), "READ"));
+  }
+  TFile *Mean = new TFile(FileNameMean, "READ");
 
-  // fill the path to the files into a vector of vector of strings
-  std::vector<std::vector<std::string>> SubSampleFileNames;
-  for (nlohmann::json::iterator it = JSubSamples.begin();
-       it != JSubSamples.end(); ++it) {
-    SubSampleFileNames.push_back(
-        JSubSamples[it.key()].get<std::vector<std::string>>());
+  // get list of all tasks
+  std::vector<std::string> Tasks;
+  std::vector<Double_t> CentralityBinEdges =
+      Jconfig["task"]["CentralityBinEdges"].get<std::vector<Double_t>>();
+  for (std::size_t i = 0; i < CentralityBinEdges.size() - 1; i++) {
+    Float_t lowCentralityBinEdge = CentralityBinEdges.at(i);
+    Float_t highCentralityBinEdge = CentralityBinEdges.at(i + 1);
+    Tasks.push_back(std::string(Form(
+        "%s_%.1f-%.1f", Jconfig["task"]["BaseName"].get<std::string>().c_str(),
+        lowCentralityBinEdge, highCentralityBinEdge)));
   }
 
-  // get name of all observables
-  TFile *DummyFile = new TFile(SubSampleFileNames.at(0).at(0).c_str(), "READ");
-  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(DummyFile->Get(
+  // get list of all observables
+  std::vector<std::string> Observables;
+  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(Mean->Get(
       Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
+  TList *SCList = dynamic_cast<TList *>(
+      dynamic_cast<TList *>(
+          dynamic_cast<TList *>(
+              tdirFile->Get(tdirFile->GetListOfKeys()->First()->GetName()))
+              ->FindObject("FinalResults"))
+          ->FindObject("FinalResultSymmetricCumulant"));
 
-  std::vector<std::pair<std::string, std::vector<Double_t>>> SCs;
-  AliAnalysisTaskAR *AliTask = new AliAnalysisTaskAR("Dummy");
-  AliTask->GetPointers(dynamic_cast<TList *>(tdirFile->Get(Task.c_str())));
-  TList *SCList =
-      dynamic_cast<TList *>(AliTask->GetFinalResultSymmetricCumulantsList());
-  TList *l;
-  TH1 *h;
-  std::vector<Double_t> BinCenter = {};
-  for (auto *list : *SCList) {
-    l = dynamic_cast<TList *>(list);
-    for (auto hist : *l) {
-      h = dynamic_cast<TH1 *>(hist);
-      for (Int_t bin = 1; bin <= h->GetNbinsX(); bin++) {
-        BinCenter.push_back(h->GetBinCenter(bin));
-      }
-      SCs.push_back(std::pair(h->GetName(), BinCenter));
-      BinCenter.clear();
+  for (auto sc : *SCList) {
+    for (auto dep : *dynamic_cast<TList *>(sc)) {
+      Observables.push_back(std::string(dep->GetName()));
     }
   }
-  // close dummy file and start boostrapping
-  DummyFile->Close();
 
-  TProfile *bootstrapProfile =
-      new TProfile("bootstrap", "bootstrap", SubSampleFileNames.size() + 1, 0,
-                   SubSampleFileNames.size() + 1);
+  TFile *Output = new TFile("Bootstrap.root", "RECREATE");
   TGraphErrors *ge = nullptr;
-  TFile *currentFile = nullptr;
-  TDirectoryFile *currentTDirFile = nullptr;
-  TList *currentList = nullptr;
-  TH1 *currentHist = nullptr;
-  Double_t sigma = 0;
+  TH1 *hist;
+  std::vector<TH1 *> hists;
+  std::vector<Double_t> x = {};
   std::vector<Double_t> y = {};
   std::vector<Double_t> ey = {};
+  Double_t sigma = 0.;
 
-  // loop over all histograms of symmetric cumulants
-  for (auto SC : SCs) {
-    // loop over each bin
-    y.clear();
-    ey.clear();
-    bootstrapProfile->Reset();
-    for (Int_t i = 1; i <= SC.second.size(); i++) {
-      std::cout << "Working in Task " << Task << " on " << SC.first
-                << " in bin " << i << std::endl;
-      // loop over all subsamples
-      for (auto Files : SubSampleFileNames) {
-        // loop over all files in the subsample
-        for (auto File : Files) {
-          currentFile = TFile::Open(File.c_str(), "READ");
-          currentTDirFile = dynamic_cast<TDirectoryFile *>(currentFile->Get(
-              Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
-          currentList =
-              dynamic_cast<TList *>(currentTDirFile->Get(Task.c_str()));
+  for (auto Task : Tasks) {
+    for (auto Observable : Observables) {
+      std::cout << "Working on " << Observable << " in task " << Task
+                << std::endl;
 
-          currentHist = dynamic_cast<TH1 *>(IterateList(currentList, SC.first));
-          bootstrapProfile->Fill(i - 0.5, currentHist->GetBinContent(i));
-          bootstrapProfile->Fill(SubSampleFileNames.size() + 0.5,
-                                 currentHist->GetBinContent(i));
-          currentFile->Close();
-          delete currentList;
+      x.clear();
+      y.clear();
+      ey.clear();
+      hists.clear();
+
+      // load histogram holding all sample mean
+      hist =
+          dynamic_cast<TH1 *>(GetObjectFromOutputFile(Mean, Task, Observable));
+
+      // load histograms holding subsample means
+      for (auto file : Files) {
+        hists.push_back(dynamic_cast<TH1 *>(
+            GetObjectFromOutputFile(file, Task, Observable)));
+      }
+
+      // loop over all bins
+      for (Int_t bin = 1; bin <= hist->GetNbinsX(); bin++) {
+
+        x.push_back(hist->GetBinCenter(bin));
+        if (!std::isnan(hist->GetBinContent(bin)){
+          y.push_back(hist->GetBinContent(bin));
+          sigma = 0.;
+
+          for (auto h : hists) {
+            sigma += (hist->GetBinContent(bin) - h->GetBinContent(bin)) *
+                     ((hist->GetBinContent(bin) - h->GetBinContent(bin)));
+          }
+          sigma = TMath::Sqrt(sigma / (Files.size() * (Files.size() - 1.)));
+
+          ey.push_back(sigma);
+
+        } else {
+          std::cout << "NaN encountered. Keep going..." << std::endl;
+          y.push_back(0.);
+          ey.push_back(0.);
         }
       }
-      y.push_back(bootstrapProfile->GetBinContent(SubSampleFileNames.size()));
-      ey.push_back(BootstrapSigma(bootstrapProfile));
-    }
-    ge = new TGraphErrors(SC.second.size(), SC.second.data(), y.data(), 0,
-                          ey.data());
-    TFile *out =
-        new TFile((Task + std::string("_Bootstrap.root")).c_str(), "UPDATE");
-    ge->Write((Task + SC.first).c_str());
-    out->Close();
-    delete ge;
 
-    // std::cout << "GOT IT" << std::endl;
-    // std::exit(4);
+      // clear memory
+      // for (auto h : hists) {
+      //   delete h;
+      // }
+
+      ge = new TGraphErrors(x.size(), x.data(), y.data(), 0, ey.data());
+      ge->Write((Task + std::string("_") + Observable).c_str());
+      delete ge;
+    }
   }
+  Output->Close();
+
   return 0;
 }

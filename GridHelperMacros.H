@@ -2,7 +2,7 @@
  * File              : GridHelperMacros.H
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 14.10.2021
- * Last Modified Date: 16.02.2022
+ * Last Modified Date: 17.02.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -19,11 +19,17 @@ TObject *IterateList(TList *list, std::string searchString) {
 
   TObject *obj = nullptr;
   for (auto key : *list) {
-    if (key->IsFolder()) {
-      obj = IterateList(dynamic_cast<TList *>(key), searchString);
-    } else {
-      obj = key;
+
+    obj = key;
+
+    if (boost::contains(std::string(key->GetName()), searchString)) {
+      break;
     }
+
+    if (obj->IsFolder()) {
+      obj = IterateList(dynamic_cast<TList *>(obj), searchString);
+    }
+
     if (boost::contains(std::string(obj->GetName()), searchString)) {
       break;
     }
@@ -31,33 +37,57 @@ TObject *IterateList(TList *list, std::string searchString) {
   return obj;
 }
 
-TH1 *GetHistFromOutputFile(std::string observable, std::string FileName,
-                           std::string TaskName) {
+TObject *GetObjectFromOutputFile(TFile *file, std::string TopLevelListName,
+                                 std::string ObjectName) {
+
+  if (!file) {
+    std::cout << "File pointer is NULL" << std::endl;
+    return nullptr;
+  }
 
   std::fstream ConfigFile("config.json");
   nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
 
-  // open file
-  TFile *file = TFile::Open(FileName.c_str(), "READ");
-
-  // open output directory
+  // get list of all tasks
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(file->Get(
       Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
+  TList *TopLevelList =
+      dynamic_cast<TList *>(tdirFile->Get(TopLevelListName.c_str()));
 
-  TList *TaskList = dynamic_cast<TList *>(tdirFile->Get(TaskName.c_str()));
+  TObject *result = IterateList(TopLevelList, ObjectName)->Clone();
 
-  TH1 *result = dynamic_cast<TH1 *>(IterateList(TaskList, observable));
-
-  // close the file
-  file->Close();
+  delete TopLevelList;
 
   return result;
 }
 
+// TH1 *GetHistFromOutputFile(std::string observable, std::string FileName,
+//                            std::string TaskName) {
+//
+//   std::fstream ConfigFile("config.json");
+//   nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
+//
+//   // open file
+//   TFile *file = TFile::Open(FileName.c_str(), "READ");
+//
+//   // open output directory
+//   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(file->Get(
+//       Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
+//
+//   TList *TaskList = dynamic_cast<TList *>(tdirFile->Get(TaskName.c_str()));
+//
+//   TH1 *result = dynamic_cast<TH1 *>(IterateList(TaskList, observable));
+//
+//   // close the file
+//   file->Close();
+//
+//   return result;
+// }
+
 Double_t BootstrapSigma(TProfile *p) {
   // compute statistical uncertainty sigma from tprofile
-  // the first n-1 bins contain the subsample means and the nth bin contains the
-  // whole mean
+  // the first n-1 bins contain the subsample means and the nth bin contains
+  // the whole mean
   Double_t sigma = 0.0;
   Int_t N = p->GetNbinsX();
 

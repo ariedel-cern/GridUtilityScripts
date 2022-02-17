@@ -9,60 +9,44 @@
 
 [ ! -f config.json ] && echo "No config file!!!" && exit 1
 
+# Mean="Bootstrap/Mean_ReTerminated.root"
+# FileList="Bootstrap.txt"
+# aliroot -q -l -b $GRID_UTILITY_SCRIPTS/Bootstrap.C\(\"$Mean\",\"$FileList\"\)
+# exit 4
+
 # create directory to store bootstraped files
 OutDir="Bootstrap"
 mkdir -p "$OutDir"
-rm -rf "${OutDir}/*"
+rm -rf "${OutDir}/*.root"
 
 # merge all files in a subsample to compute the subsample averages
 MergedFile=""
 FilesToMerge=""
 FileList="Bootstrap.txt"
+: >$FileList
 
 while read Subsample; do
-    MergedFile="${Subsample}.root"
-    FilesToMerge="$(jq -r --arg Subsample $Subsample '.[$Subsample][]' $GRID_UTILITY_SCRIPTS/SUBSAMPLES.json)"
+	MergedFile="${Subsample}_Merged.root"
+	FilesToMerge="$(jq -r --arg Subsample $Subsample '.[$Subsample][]' $GRID_UTILITY_SCRIPTS/SUBSAMPLES.json)"
 
-    hadd -f -k -j $(nproc) $MergedFile $FilesToMerge || exit 1
+	hadd -f -k -j $(nproc) $MergedFile $FilesToMerge || exit 1
 
-    mv $MergedFile $OutDir
-    echo $MergedFile >>$FileList
+	mv $MergedFile $OutDir
+	echo "${OutDir}/${MergedFile/Merged/ReTerminated}" >>$FileList
 
 done < <(jq -r 'keys[]' $GRID_UTILITY_SCRIPTS/SUBSAMPLES.json)
 
 # create file with whole sample average
-FilesToMerge="$(find $OutDir -name "*.root")"
-MergedFile="Mean.root"
+FilesToMerge="$(find $OutDir -name "*_Merged.root")"
+MergedFile="Mean_Merged.root"
 hadd -f -k -j $(nproc) $MergedFile $FilesToMerge || exit 1
 mv $MergedFile $OutDir
+Mean="${OutDir}/${MergedFile/Merged/ReTerminated}"
+
+# reterminate before bootstrap
+find $OutDir -type f -name "*_Merged.root" | parallel --bar --progress "aliroot -b -l -q $GRID_UTILITY_SCRIPTS/ReTerminate.C'(\"{}\")'"
 
 # call bootstrap macro
-aliroot -q -l -b $GRID_UTILITY_SCRIPTS/Bootstrap.C\(\"$MergedFile\",\"$FileList\"\)
+aliroot -q -l -b $GRID_UTILITY_SCRIPTS/Bootstrap.C\(\"$Mean\",\"$FileList\"\)
 
 exit 0
-
-# get list of all base tasks
-# BaseName="$(jq -r '.task.BaseName' config.json)"
-# CentralityBinEdges="$(jq -r '.task.CentralityBinEdges[]' config.json)"
-# Array=($CentralityBinEdges)
-#
-# Tasks=""
-#
-# for i in "${!Array[@]}"; do
-# 	if [ "$i" -eq "$((${#Array[@]} - 1))" ]; then
-# 		continue
-# 	elif [ "$i" -eq "$((${#Array[@]} - 2))" ]; then
-# 		Tasks+="$(printf "%s_%.1f-%.1f" $BaseName ${Array[$i]} ${Array[$((i + 1))]})"
-# 	else
-# 		Tasks+="$(printf "%s_%.1f-%.1f," $BaseName ${Array[$i]} ${Array[$((i + 1))]})"
-# 	fi
-# done
-#
-# rm -rf *_Bootstrap.root
-#
-# echo "Performing Bootstrap"
-#
-# echo $Tasks | tr "," "\n" | parallel --bar --progress "aliroot -q -l -b $GRID_UTILITY_SCRIPTS/Bootstrap.C'(\"$GRID_UTILITY_SCRIPTS/SUBSAMPLES.json\",\"{}\")'"
-#
-# # find $OutputDir -type f -name "*Merged.root" | parallel --bar --progress "aliroot -b -l -q $GRID_UTILITY_SCRIPTS/ReTerminate.C'(\"{}\")'"
-# exit 0
