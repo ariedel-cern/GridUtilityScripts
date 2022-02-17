@@ -94,7 +94,7 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
       for (Int_t bin = 1; bin <= hist->GetNbinsX(); bin++) {
 
         x.push_back(hist->GetBinCenter(bin));
-        if (!std::isnan(hist->GetBinContent(bin)){
+        if (!std::isnan(hist->GetBinContent(bin))) {
           y.push_back(hist->GetBinContent(bin));
           sigma = 0.;
 
