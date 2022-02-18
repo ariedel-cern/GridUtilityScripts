@@ -2,7 +2,7 @@
  * File              : Bootstrap.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 27.10.2021
- * Last Modified Date: 17.02.2022
+ * Last Modified Date: 18.02.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -48,14 +48,19 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
   std::vector<std::string> Observables;
   TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(Mean->Get(
       Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
-  TList *SCList = dynamic_cast<TList *>(
+  TList *FinalResultsList = dynamic_cast<TList *>(
       dynamic_cast<TList *>(
-          dynamic_cast<TList *>(
-              tdirFile->Get(tdirFile->GetListOfKeys()->First()->GetName()))
-              ->FindObject("FinalResults"))
-          ->FindObject("FinalResultSymmetricCumulant"));
+          tdirFile->Get(tdirFile->GetListOfKeys()->First()->GetName()))
+          ->FindObject("FinalResults"));
 
-  for (auto sc : *SCList) {
+  for (auto cor : *dynamic_cast<TList *>(
+           FinalResultsList->FindObject("FinalResultCorrelator"))) {
+    for (auto dep : *dynamic_cast<TList *>(cor)) {
+      Observables.push_back(std::string(dep->GetName()));
+    }
+  }
+  for (auto sc : *dynamic_cast<TList *>(
+           FinalResultsList->FindObject("FinalResultSymmetricCumulant"))) {
     for (auto dep : *dynamic_cast<TList *>(sc)) {
       Observables.push_back(std::string(dep->GetName()));
     }
