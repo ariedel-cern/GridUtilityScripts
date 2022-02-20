@@ -71,6 +71,7 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
   TH1 *hist;
   std::vector<TH1 *> hists;
   std::vector<Double_t> x = {};
+  std::vector<Double_t> ex = {};
   std::vector<Double_t> y = {};
   std::vector<Double_t> ey = {};
   Double_t sigma = 0.;
@@ -81,6 +82,7 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
                 << std::endl;
 
       x.clear();
+      ex.clear();
       y.clear();
       ey.clear();
       hists.clear();
@@ -99,6 +101,7 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
       for (Int_t bin = 1; bin <= hist->GetNbinsX(); bin++) {
 
         x.push_back(hist->GetBinCenter(bin));
+        ex.push_back(hist->GetBinWidth(bin) / 2.);
         if (!std::isnan(hist->GetBinContent(bin))) {
           y.push_back(hist->GetBinContent(bin));
           sigma = 0.;
@@ -123,7 +126,7 @@ Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
       //   delete h;
       // }
 
-      ge = new TGraphErrors(x.size(), x.data(), y.data(), 0, ey.data());
+      ge = new TGraphErrors(x.size(), x.data(), y.data(), ex.data(), ey.data());
       ge->Write((Task + std::string("_") + Observable).c_str());
       delete ge;
     }
