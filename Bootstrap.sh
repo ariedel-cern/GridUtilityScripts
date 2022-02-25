@@ -2,7 +2,7 @@
 # File              : Bootstrap.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 27.10.2021
-# Last Modified Date: 18.02.2022
+# Last Modified Date: 22.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # bootstrap all FinalResultProfile
@@ -11,8 +11,8 @@
 
 # create directory to store bootstraped files
 OutDir="Bootstrap"
+rm -rf "$OutDir"
 mkdir -p "$OutDir"
-rm -rf "${OutDir}/*.root"
 
 # merge all files in a subsample to compute the subsample averages
 MergedFile=""

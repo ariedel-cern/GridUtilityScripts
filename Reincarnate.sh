@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 07.02.2022
+# Last Modified Date: 25.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -25,6 +25,7 @@ UseWeights=$(jq -r '.task.UseWeights' config.json)
 Data=""
 Re0=""
 Re1=""
+AODTotal=""
 StatusRe0=""
 SubjobActiveRe0=""
 SubjobWaitingRe0=""
@@ -65,13 +66,18 @@ for Run in $Runs; do
 		continue
 	fi
 
-	# iterate over reincarnations
+	# get all indices
 	Indices="$(jq -r 'keys_unsorted[-4:]|length' <<<$Data)"
 	Indices="$(($Indices - 1))"
+	# get index of last reincarnation
 	LastRe="$(jq -r 'keys[-2]' <<<$Data)"
+	# get number of total AODs
+	TotalAOD="$(jq -r '.R0.AODTotal' <<<$Data)"
 
+	# iterate over reincarnations
 	for Index in $(seq 0 $Indices); do
 
+		# get stats of reincarnation
 		Re0="R${Index}"
 		StatusRe0="$(jq -r --arg Re $Re0 '.[$Re].Status' <<<$Data)"
 		SubjobActiveRe0="$(jq -r --arg Re $Re0 '.[$Re].SubjobActive' <<<$Data)"
@@ -106,6 +112,7 @@ for Run in $Runs; do
 			echo "Waiting for lock..."
 			{
 				flock 100
+				# i assume that the very last reincarnation runs with 1 AOD per subjob
 				jq --arg Run "$Run" --arg Re "$Re0" --arg Error "${SubjobErrorRe0:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
 				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			} 100>$LockFile
@@ -136,6 +143,8 @@ for Run in $Runs; do
 			echo "Reincarnation $Re1 is already under way, skip $Re0 ->$MasterjobIdRe1"
 			continue
 		fi
+
+		# if success rate of aods is high enough, do not bother with reincarnation
 
 		# now we can kick off the next reincarnation!
 		echo "Kick of Reincarnation $Re1 in Run $Run"
@@ -171,12 +180,29 @@ for Run in $Runs; do
 		# check if we managed to download a xml collection
 		# if not, break for now
 		if ! grep -q "event name" "$XmlCollection"; then
+			echo "Downloaded Xml Collection is not valid, break..."
 			cd -
 			break
 		fi
 
 		# get number of AODs which failed in this reincarnation
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
+
+		# check if we are below the failed AOD threshold
+		if [ "$((100 * ($FailedAODs / $TotalAOD)))" -gt "$(jq -r '.misc.ThresholdFailedAOD ')" ]; then
+			echo "Number of failed AODs is below the threshold -> Run is DONE!"
+
+			echo "Waiting for lock..."
+			{
+				flock 100
+				jq --arg Run "$Run" --arg Re "$Re0" --arg AODError "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
+				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
+			} 100>$LockFile
+
+			cd -
+
+			break
+		fi
 
 		# create new working directory on grid
 		alien_mkdir -p "$GridOutputDirNew"

@@ -75,7 +75,7 @@ for Run in $Runs; do
 		# if the masterjob is DONE, skip to the next reincarnation
 		Status="$(jq -r --arg Re $Reincarnation '.[$Re].Status' <<<$Data)"
 
-		# [ "$Status" == "DONE" ] && continue
+		[ "$Status" == "DONE" ] && continue
 
 		MasterjobID="$(jq -r --arg Re $Reincarnation '.[$Re].MasterjobID' <<<$Data)"
 		[ "${MasterjobID:=-44}" -eq "-44" ] && break
@@ -83,6 +83,7 @@ for Run in $Runs; do
 		GetData
 
 		echo "with Reincarnation $Reincarnation -> $MasterjobID"
+
 		# update values
 		echo "Waiting for lock..."
 		{

@@ -2,7 +2,7 @@
 # File              : SubmitJobs.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 25.08.2021
-# Last Modified Date: 07.02.2022
+# Last Modified Date: 24.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # submit jobs to grid
@@ -100,7 +100,6 @@ for Run in $Runs; do
 	ShortTimeout="$(jq -r '.misc.ShortTimeout' config.json)"
 
 	echo "################################################################################"
-	echo "Submit Run $Run with Task $BaseName"
 
 	if [ "$UseWeights" == "true" ]; then
 
@@ -146,25 +145,28 @@ for Run in $Runs; do
 
 	JobId="null"
 
+	if [ "$RunOverData" == "true" ]; then
+		Xml="000${Run}.xml"
+	else
+		Xml="${Run}.xml"
+	fi
+
+	echo "Submit Run $Run with Task $BaseName"
 	until [ "$JobId" != "null" ]; do
+		echo "keep trying..."
 		if [ "$UseWeights" == "true" ]; then
-			JobId=$(timeout 20 alien_submit ${GridWorkDir}/${Run}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+			JobId=$(timeout 20 alien_submit "${GridWorkDir}/${Run}/${Jdl}" "${Xml}" "$Run" -json | jq -r '.results[0].jobId')
 		else
-			JobId=$(timeout 20 alien_submit ${GridWorkDir}/${Jdl} "000${Run}.xml" $Run -json | jq -r '.results[0].jobId')
+			JobId=$(timeout 20 alien_submit "${GridWorkDir}/${Jdl}" "${Xml}" "$Run" -json | jq -r '.results[0].jobId')
 		fi
 	done
-
-	if [ "$RunOverData" == "true" ]; then
-		Xml="${GridXmlCollection}/000${Run}.xml"
-	else
-		Xml="${GridXmlCollection}/${Run}.xml"
-	fi
+	echo "YES..."
 
 	# does not always work on the first try
 	# alien.py cat works like a download, which fails from time to time
 	NumberAOD="0"
 	until [ "$NumberAOD" -ge 1 ]; do
-		NumberAOD="$(alien.py cat $Xml | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
+		NumberAOD="$(alien.py cat "${GridXmlCollection}/${Xml}" | grep "event name" | tail -n1 | awk -F\" '{print $2}')"
 	done
 
 	((RunCounter++))

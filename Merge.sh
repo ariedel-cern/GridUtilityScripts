@@ -2,7 +2,7 @@
 # File              : Merge.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 24.03.2021
-# Last Modified Date: 08.02.2022
+# Last Modified Date: 25.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # merge .root files run by run
@@ -59,7 +59,7 @@ for Run in $Runs; do
 	# merge files using hadd in parallel!!!
 	hadd -f -k -j $(nproc) $MergedFile $FilesToMerge || exit 1
 
-	# create backup, just in cas3
+	# create backup, just in case
 	cp "${MergedFile}" "${MergedFile}.bak"
 
 	# count number of merge files
@@ -67,6 +67,7 @@ for Run in $Runs; do
 
 	# delete smaller root files (safing space on the local disk)
 	find . -type f -name "$OutputFile" -delete
+
 	# delete all empty directories
 	find . -empty -type d -delete
 
