@@ -189,7 +189,7 @@ for Run in $Runs; do
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
 
 		# check if we are below the failed AOD threshold
-		if [ "$((100 * ($FailedAODs / $TotalAOD)))" -gt "$(jq -r '.misc.ThresholdFailedAOD ')" ]; then
+		if [ "$((100 * ($FailedAODs / $TotalAOD)))" -gt "$(jq -r '.misc.ThresholdFailedAOD ' config.json)" ]; then
 			echo "Number of failed AODs is below the threshold -> Run is DONE!"
 
 			echo "Waiting for lock..."
