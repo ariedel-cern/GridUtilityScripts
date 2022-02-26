@@ -72,6 +72,8 @@ for Run in $Runs; do
 
 	find $Dir -type f -name $GridOutputFile | parallel --progress --bar Check_Integrity {} $FileLog >>$FileLog
 
+	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | wc -l)
+
 	echo "Waiting for lock..."
 	{
 		flock 100
