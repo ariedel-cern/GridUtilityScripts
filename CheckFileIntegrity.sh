@@ -82,7 +82,7 @@ for Run in $Runs; do
 
 	# remove checked files on grid to preserve space
 	echo "Remove grid files"
-	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile -printf "${GridHomeDir}/${GridWorkDir}/%p," | xargs alien_rm -f
+	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile -printf "${GridHomeDir}/${GridWorkDir}/%p," | sed 's/,$//' | xargs alien_rm -f
 done
 
 exit 0
