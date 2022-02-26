@@ -72,16 +72,14 @@ for Run in $Runs; do
 
 	find $Dir -type f -name $GridOutputFile | parallel --progress --bar Check_Integrity {} $FileLog >>$FileLog
 
-	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | wc -l)
-
-	# remove checked files on grid to preserve space
-	cat $FileLog | parallel --progress --bar "alien_rm -f ${GridHomeDir}/${GridWorkDir}/{}" 2>/dev/null
-
 	echo "Waiting for lock..."
 	{
 		flock 100
 		jq --arg Run $Run --arg FilesChecked ${FilesChecked:=0} 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
+
+	# remove checked files on grid to preserve space
+	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | parallel --progress --bar "alien_rm -f ${GridHomeDir}/${GridWorkDir}/{}" 2>/dev/null
 done
 
 exit 0
