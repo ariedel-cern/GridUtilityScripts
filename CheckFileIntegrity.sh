@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 26.02.2022
+# Last Modified Date: 27.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -81,7 +81,8 @@ for Run in $Runs; do
 	} 100>$LockFile
 
 	# remove checked files on grid to preserve space
-	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | parallel --progress --bar "alien_rm -f ${GridHomeDir}/${GridWorkDir}/{}" 2>/dev/null
+	echo "Remove grid files"
+	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile -printf "${GridHomeDir}/${GridWorkDir}/%p," | xargs alien_rm -f
 done
 
 exit 0
