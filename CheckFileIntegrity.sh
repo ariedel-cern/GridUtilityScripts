@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 07.02.2022
+# Last Modified Date: 26.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -61,6 +61,8 @@ export -f Check_Integrity
 Status=""
 Dir=""
 FilesChecked=""
+GridHomeDir="$(jq -r '.task.GridHomeDir' config.json)"
+GridWorkDir="$(jq -r '.task.GridWorkDir' config.json)"
 GridOutputFile="$(jq -r '.task.GridOutputFile' config.json)"
 
 for Run in $Runs; do
@@ -72,7 +74,10 @@ for Run in $Runs; do
 
 	FilesChecked=$(find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile | wc -l)
 
-    echo "Waiting for lock..."
+	# remove checked files on grid to preserve space
+	cat $FileLog | parallel --progress --bar "alien_rm -f ${GridHomeDir}/${GridWorkDir}/{}" 2>/dev/null
+
+	echo "Waiting for lock..."
 	{
 		flock 100
 		jq --arg Run $Run --arg FilesChecked ${FilesChecked:=0} 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
