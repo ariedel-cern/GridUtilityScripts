@@ -2,7 +2,7 @@
 # File              : CheckQuota.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 28.01.2022
+# Last Modified Date: 27.02.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check if we can submit another masterjob to grid
@@ -19,12 +19,14 @@ ActiveSubjobs="0"
 CPUCost="0"
 MasterjobsNotReady="0"
 MasterjobsInError="0"
+DiskSpace="0"
 
 GetQuota() {
 	# fill global variables
 	ActiveSubjobs=$(alien_ps -X | wc -l)
 	RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$(NF-1));print int($(NF-1))}')
 	CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$(NF-1));print int($(NF-1))}')
+	DiskSpace=$(alien.py quota | awk '/Storage Size/{gsub("%","",$NF);print int($NF)}')
 	MasterjobsNotReady=$(alien_ps -M -W | wc -l)
 	MasterjobsInError=$(alien_ps -M -E | wc -l)
 	return 0
@@ -45,6 +47,7 @@ if [ $ActiveSubjobs -gt $ThresholdActiveSubjobs ] || [ $RunningTime -gt $Thresho
 	echo "$ActiveSubjobs/$ThresholdActiveSubjobs are running/waiting"
 	echo "$RunningTime/$ThresholdRunningTime Running Time was used"
 	echo "$CPUCost/$ThresholdCpuCost CPU cost was used"
+	echo "$DiskSpace/100% disk space is used"
 	echo "################################################################################"
 
 	exit 1
@@ -68,6 +71,11 @@ if [ $MasterjobsInError -gt 0 ]; then
 	alien_ps -E -M | awk '{print $2}' | parallel --progress --bar "alien.py resubmit {}"
 	echo "################################################################################"
 
+	exit 1
+fi
+
+if [ "$DiskSpace" -gt "90" ]; then
+	echo "Disk space is running out, break..."
 	exit 1
 fi
 
