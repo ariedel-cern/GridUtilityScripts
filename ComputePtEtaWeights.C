@@ -1,8 +1,8 @@
 /**
- * File              : ComputeKinematicWeights.C
+ * File              : ComputePtEtaWeights.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 01.09.2021
- * Last Modified Date: 17.01.2022
+ * Last Modified Date: 01.03.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -27,14 +27,14 @@ Int_t ComputeKinematicWeights(const char *ConfigFileName,
 
   // open new file holding weights
   std::string weightFileName(MergedFileName);
-  boost::replace_all(weightFileName, "Merged", "KinematicWeights");
+  boost::replace_all(weightFileName, "Merged", "PtEtaWeights");
   TFile *weightFile = new TFile(weightFileName.c_str(), "RECREATE");
 
   // initalize objects
   TList *TaskList;
   TList *Hists = new TList();
-  TH1D *phiHist, *phiWeightHist, *ptHistReco, *ptHistSim, *ptWeightHist,
-      *etaHistReco, *etaHistSim, *etaWeightHist;
+  TH1D *ptHistReco, *ptHistSim, *ptWeightHist, *etaHistReco, *etaHistSim,
+      *etaWeightHist;
 
   // loop over all tasks
   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
@@ -42,8 +42,6 @@ Int_t ComputeKinematicWeights(const char *ConfigFileName,
     TaskList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
 
     // get distributions after cut
-    phiHist = dynamic_cast<TH1D *>(IterateList(
-        TaskList, std::string("[kRECO]fTrackControlHistograms[kPHI][kAFTER]")));
     ptHistReco = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kRECO]fTrackControlHistograms[kPT][kAFTER]")));
     ptHistSim = dynamic_cast<TH1D *>(IterateList(
@@ -52,20 +50,6 @@ Int_t ComputeKinematicWeights(const char *ConfigFileName,
         TaskList, std::string("[kRECO]fTrackControlHistograms[kETA][kAFTER]")));
     etaHistSim = dynamic_cast<TH1D *>(IterateList(
         TaskList, std::string("[kSIM]fTrackControlHistograms[kETA][kAFTER]")));
-
-    // compute phi weights
-    phiWeightHist = dynamic_cast<TH1D *>(phiHist->Clone("PhiWeights"));
-    phiWeightHist->SetTitle("#varphi weights");
-    Double_t scale = phiHist->GetEntries() / phiHist->GetNbinsX();
-    for (Int_t i = 1; i <= phiHist->GetNbinsX(); i++) {
-      if (phiHist->GetBinContent(i) < 0.5) {
-        phiWeightHist->SetBinContent(i, 0);
-      } else {
-
-        phiWeightHist->SetBinContent(i,
-                                     scale * (1. / phiHist->GetBinContent(i)));
-      }
-    }
 
     // compute pt weights
     ptWeightHist = dynamic_cast<TH1D *>(ptHistSim->Clone("PtWeights"));
@@ -92,7 +76,6 @@ Int_t ComputeKinematicWeights(const char *ConfigFileName,
     }
 
     // write weight histograms to file
-    Hists->Add(phiWeightHist);
     Hists->Add(ptWeightHist);
     Hists->Add(etaWeightHist);
 
