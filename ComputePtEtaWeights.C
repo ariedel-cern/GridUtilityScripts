@@ -11,8 +11,8 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
-Int_t ComputeKinematicWeights(const char *ConfigFileName,
-                              const char *MergedFileName) {
+Int_t ComputePtEtaWeights(const char *ConfigFileName,
+                          const char *MergedFileName) {
 
   // load config file
   std::fstream ConfigFile(ConfigFileName);
