@@ -56,6 +56,8 @@ Int_t ComputeKinematicWeights(const char *ConfigFileName,
     ptWeightHist->SetTitle("p_{T} weights");
     ptWeightHist->Divide(ptHistReco);
 
+    Double_t scale = 0.;
+
     // scale with the inverse ratio of the average bin content
     scale = (ptHistReco->GetEntries() / ptHistReco->GetNbinsX()) /
             (ptHistSim->GetEntries() / ptHistSim->GetNbinsX());
