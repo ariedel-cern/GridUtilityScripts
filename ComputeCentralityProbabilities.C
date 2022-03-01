@@ -2,15 +2,20 @@
  * File              : ComputeCentralityProbabilities.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 10.09.2021
- * Last Modified Date: 14.09.2021
+ * Last Modified Date: 01.03.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
 #include <boost/algorithm/string.hpp>
+#include <nlohmann/json.hpp>
 
-Int_t ComputeCentralityProbabilities(const char *dataFileName) {
+Int_t ComputeCentralityProbabilities(const char *configFileName,
+                                     const char *dataFileName) {
 
-  cout << dataFileName << endl;
+  // load config file
+  std::fstream ConfigFile(ConfigFileName);
+  nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
+
   // open file holding data
   TFile *dataFile = new TFile(dataFileName, "READ");
 
