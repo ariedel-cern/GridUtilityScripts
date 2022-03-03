@@ -2,7 +2,7 @@
 # File              : CheckFileIntegrity.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 17.06.2021
-# Last Modified Date: 27.02.2022
+# Last Modified Date: 03.03.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check integrity of all .root files in the local output directory
@@ -52,6 +52,9 @@ Check_Integrity() {
 	else
 		# if it passes, print the name
 		echo $1
+
+		# and remove files on grid to preserve space
+		timout $Timeout alien_rm -fr "alien:${GridHomeDir}/${GridWorkDir}/$(dirname $1)" &>/dev/null
 		return 0
 	fi
 }
@@ -80,9 +83,6 @@ for Run in $Runs; do
 		jq --arg Run $Run --arg FilesChecked ${FilesChecked:=0} 'setpath([$Run,"FilesChecked"];$FilesChecked)' $StatusFile | sponge $StatusFile
 	} 100>$LockFile
 
-	# remove checked files on grid to preserve space
-	echo "Remove grid files"
-	find "${LocalOutputDir}/${Run}" -type f -name $GridOutputFile -printf "${GridHomeDir}/${GridWorkDir}/%p\n" | xargs -t -n1 alien_rm -f
 done
 
 exit 0
