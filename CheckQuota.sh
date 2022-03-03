@@ -2,7 +2,7 @@
 # File              : CheckQuota.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 01.12.2021
-# Last Modified Date: 27.02.2022
+# Last Modified Date: 03.03.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # check if we can submit another masterjob to grid
@@ -26,7 +26,7 @@ GetQuota() {
 	ActiveSubjobs=$(alien_ps -X | wc -l)
 	RunningTime=$(alien.py quota | awk '/Running time/{gsub("%","",$(NF-1));print int($(NF-1))}')
 	CPUCost=$(alien.py quota | awk '/CPU Cost/{gsub("%","",$(NF-1));print int($(NF-1))}')
-	DiskSpace=$(alien.py quota | awk '/Storage Size/{gsub("%","",$NF);print int($NF)}')
+	DiskSpace=$(alien.py quota | awk '/Storage size/{gsub("%","",$NF);print int($NF)}')
 	MasterjobsNotReady=$(alien_ps -M -W | wc -l)
 	MasterjobsInError=$(alien_ps -M -E | wc -l)
 	return 0

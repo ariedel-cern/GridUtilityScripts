@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 27.02.2022
+# Last Modified Date: 03.03.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -189,7 +189,7 @@ for Run in $Runs; do
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
 
 		# check if we are below the failed AOD threshold
-		if [ "$(((100 * $FailedAODs) / $TotalAOD))" -lt "$(jq -r '.misc.ThresholdFailedAOD ' config.json)" ]; then
+		if [ "$((100 * $FailedAODs / $TotalAOD))" -lt "$(jq -r '.misc.ThresholdFailedAOD ' config.json)" ]; then
 			echo "Number of failed AODs is below the threshold -> Run is DONE!"
 
 			echo "Waiting for lock..."
@@ -198,6 +198,8 @@ for Run in $Runs; do
 				jq --arg Run "$Run" --arg Re "$Re0" --arg AODError "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
 				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			} 100>$LockFile
+
+			alien.py kill $MasterjobIdRe0
 
 			cd -
 
