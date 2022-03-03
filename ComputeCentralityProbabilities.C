@@ -2,10 +2,11 @@
  * File              : ComputeCentralityProbabilities.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 10.09.2021
- * Last Modified Date: 01.03.2022
+ * Last Modified Date: 03.03.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
+#include "GridHelperMacros.H"
 #include <boost/algorithm/string.hpp>
 #include <nlohmann/json.hpp>
 
@@ -13,17 +14,17 @@ Int_t ComputeCentralityProbabilities(const char *configFileName,
                                      const char *dataFileName) {
 
   // load config file
-  std::fstream ConfigFile(ConfigFileName);
+  std::fstream ConfigFile(configFileName);
   nlohmann::json Jconfig = nlohmann::json::parse(ConfigFile);
 
   // open file holding data
   TFile *dataFile = new TFile(dataFileName, "READ");
 
   // open output directory
-  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(
-      dataFile->Get(std::getenv("OUTPUT_TDIRECTORY_FILE")));
+  TDirectoryFile *tdirFile = dynamic_cast<TDirectoryFile *>(dataFile->Get(
+      Jconfig["task"]["OutputTDirectory"].get<std::string>().c_str()));
 
-  // open new file holding probabilitys
+  // open new file holding probabilities
   std::string probabilitiesFileName(dataFileName);
   boost::replace_all(probabilitiesFileName, "Merged",
                      "CentralityProbabilities");
@@ -31,47 +32,36 @@ Int_t ComputeCentralityProbabilities(const char *configFileName,
       new TFile(probabilitiesFileName.c_str(), "RECREATE");
 
   // initalize objects
-  TList *TaskList, *ControlHistogramsList, *EventControlHistogramsList;
+  TList *TaskList;
+  TList *Hists = new TList();
   TH1D *cenHist, *cenProbHist;
-  Double_t norm;
 
   // loop over all tasks
-  // there should be only one
   for (auto KeyTask : *(tdirFile->GetListOfKeys())) {
-
     // get the output list of a task
     TaskList = dynamic_cast<TList *>(tdirFile->Get(KeyTask->GetName()));
-    // get top list of control histograms
-    ControlHistogramsList =
-        dynamic_cast<TList *>(TaskList->FindObject("ControlHistograms"));
-    // get list of track control histograms
-    EventControlHistogramsList = dynamic_cast<TList *>(
-        ControlHistogramsList->FindObject("EventControlHistograms"));
-    // get phi distribution after cut
-    cenHist = dynamic_cast<TH1D *>(EventControlHistogramsList->FindObject(
-        "[kRECO]fEventControlHistograms[kCEN][kAFTER]"));
 
-    cenProbHist = dynamic_cast<TH1D *>(cenHist->Clone("CenProb"));
-    cenProbHist->SetTitle("Centrality acceptance probability");
+    cenHist = dynamic_cast<TH1D *>(IterateList(
+        TaskList, std::string("[kRECO]fEventControlHistograms[kCEN][kAFTER]")));
 
-    // invert centrality distribution bin by bin
-    for (int bin = 1; bin <= cenHist->GetNbinsX(); bin++) {
-      if (cenHist->GetBinContent(bin) == 0) {
-        std::cout << "Bin " << bin
-                  << " is empty. There has to be something wrong..."
-                  << std::endl;
-        continue;
+    // compute centrality probabilities
+    cenProbHist =
+        dynamic_cast<TH1D *>(cenHist->Clone("CentralityProbabilities"));
+    cenProbHist->SetTitle("centrality probabilities");
+    for (Int_t i = 1; i <= cenProbHist->GetNbinsX(); i++) {
+      if (cenHist->GetBinContent(i) < 1.) {
+        cenProbHist->SetBinContent(i, 0.);
+      } else {
+        cenProbHist->SetBinContent(i, 1. / cenHist->GetBinContent(i));
       }
-      cenProbHist->SetBinContent(bin, 1. / cenHist->GetBinContent(bin));
     }
 
-    // normalize distribution to the largest value to interpret them as
-    // probabilities
-    norm = cenProbHist->GetMaximum();
-    for (int bin = 1; bin <= cenProbHist->GetNbinsX(); bin++) {
-      cenProbHist->SetBinContent(bin, cenProbHist->GetBinContent(bin) / norm);
-    }
-    cenProbHist->Write();
+    cenProbHist->Scale(1. / cenProbHist->GetMaximum(), "nosw2");
+    // write weight histograms to file
+    Hists->Add(cenProbHist);
+
+    Hists->Write(TaskList->GetName(), TObject::kSingleKey);
+    Hists->Clear();
   }
 
   probabilitiesFile->Close();
