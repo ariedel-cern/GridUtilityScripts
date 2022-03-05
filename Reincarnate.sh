@@ -197,7 +197,7 @@ for Run in $Runs; do
 			echo "Waiting for lock..."
 			{
 				flock 100
-				jq --arg Run "$Run" --arg Re "$Re0" --arg AODError "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODError"];$Error)' $StatusFile | sponge $StatusFile
+				jq --arg Run "$Run" --arg Re "$Re0" --arg AODError "${FailedAODs:=-44}" 'setpath([$Run,$Re,"AODError"];$AODError)' $StatusFile | sponge $StatusFile
 				jq --arg Run "$Run" --arg Status "DONE" 'setpath([$Run,"Status"];$Status)' $StatusFile | sponge $StatusFile
 			} 100>$LockFile
 
