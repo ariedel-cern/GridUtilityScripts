@@ -2,7 +2,7 @@
 # File              : Reincarnate.sh
 # Author            : Anton Riedel <anton.riedel@tum.de>
 # Date              : 30.11.2021
-# Last Modified Date: 03.03.2022
+# Last Modified Date: 05.03.2022
 # Last Modified By  : Anton Riedel <anton.riedel@tum.de>
 
 # reincarnate failed jobs on grid
@@ -19,8 +19,9 @@ echo "Waiting for lock..."
 } 100>$LockFile
 
 # options from config file
-UseWeights=$(jq -r '.task.UseWeights' config.json)
-
+UseWeights="$(jq -r '.task.UseWeights' config.json)"
+ThresholdWaitingJobs="$(jq '.misc.ThresholdReincarnateWaitingJobs' config.json)"
+ThresholdFailedAOD="$(jq -r '.misc.ThresholdFailedAOD ' config.json)"
 # loop variables
 Data=""
 Re0=""
@@ -86,19 +87,20 @@ for Run in $Runs; do
 
 		echo "Working on Reincarnation $Re0"
 
-		# check if a reincarnation is still ongoing
+		# check if the mastjob is done yet
 		if [ ! "$StatusRe0" == "DONE" ]; then
-			# now check if there are jobs running
-			SubjobActiveRe0="${SubjobActive:=-44}"
-			if [ "${SubjobActiveRe0#-}" -gt 0 ]; then
+			# if not, check if there are jobs running
+			if [ "${SubjobActiveRe0}" -ge "1" -a "$SubjobActiveRe0" -ne "-44" ]; then
 				# if there are, we do not need to reincarnate
 				echo "Reincarnation $Re0 still going, break..."
 				break
 			fi
 
+			echo "Waiting for last subjobs, or..."
+
 			# now check the number of waiting subjobs
 			# if there are only a few, we can reincarnate
-			if [ "$SubjobWaitingRe0" -gt "$(jq '.misc.ThresholdReincarnateWaitingJobs' config.json)" ]; then
+			if [ "$SubjobWaitingRe0" -ge "${ThresholdWaitingJobs:=1}" ]; then
 				echo "Reincarnation $Re0 still has a few jobs in the queue, break ..."
 				break
 			fi
@@ -189,7 +191,7 @@ for Run in $Runs; do
 		FailedAODs="$(grep "event name" $XmlCollection | tail -n1 | awk -F\" '{print $2}')"
 
 		# check if we are below the failed AOD threshold
-		if [ "$((100 * $FailedAODs / $TotalAOD))" -lt "$(jq -r '.misc.ThresholdFailedAOD ' config.json)" ]; then
+		if [ "$((100 * $FailedAODs / $TotalAOD))" -lt "${ThresholdFailedAOD:=1}" ]; then
 			echo "Number of failed AODs is below the threshold -> Run is DONE!"
 
 			echo "Waiting for lock..."
