@@ -1,5 +1,5 @@
 /**
- * File              : SystematicChecks.C
+ * File              : Bootstrap.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 27.10.2021
  * Last Modified Date: 21.03.2022
@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-Int_t SystematicChecks(const char *FileNameMean, const char *ListOfFiles) {
+Int_t Bootstrap(const char *FileNameMean, const char *ListOfFiles) {
 
   // load config file
   std::fstream ConfigFile("config.json");
@@ -160,7 +160,8 @@ Int_t SystematicChecks(const char *FileNameMean, const char *ListOfFiles) {
         for (auto skip : skipSysCheck) {
           if (boost::contains(syscheckTasks.at(i).at(j), skip)) {
             flag = kFALSE;
-            std::cout << "Skipping " << syscheckTasks.at(i).at(j) << std::endl;
+            std::cout << "Skipping systematic check: "
+                      << syscheckTasks.at(i).at(j) << std::endl;
           }
         }
         if (flag) {
