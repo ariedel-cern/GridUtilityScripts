@@ -2,7 +2,7 @@
  * File              : CentralityDependence.C
  * Author            : Anton Riedel <anton.riedel@tum.de>
  * Date              : 20.02.2022
- * Last Modified Date: 22.02.2022
+ * Last Modified Date: 21.03.2022
  * Last Modified By  : Anton Riedel <anton.riedel@tum.de>
  */
 
@@ -69,8 +69,8 @@ Int_t CentralityDependence(const char *FileName) {
   TFile *bootstrap = new TFile(FileName, "READ");
   TFile *out = new TFile("CentralityDependence.root", "RECREATE");
   out->cd();
-  TGraphErrors *ge, *hist;
-  std::vector<Double_t> x, ex, y, ey;
+  TGraphErrors *gstat, *gsys, *hstat, *hsys;
+  std::vector<Double_t> x, ex, y, estat, esys;
   Int_t i;
 
   // create a plot for each observable
@@ -81,26 +81,38 @@ Int_t CentralityDependence(const char *FileName) {
     x.clear();
     ex.clear();
     y.clear();
-    ey.clear();
+    estat.clear();
+    esys.clear();
 
     i = 0;
     for (auto task : Tasks) {
 
       std::cout << "in task " << task << std::endl;
 
-      hist = dynamic_cast<TGraphErrors *>(
-          bootstrap->Get((task + std::string("_") + observable).c_str()));
+      hstat = dynamic_cast<TGraphErrors *>(bootstrap->Get(
+          (std::string("STAT_") + task + std::string("_") + observable)
+              .c_str()));
+      hsys = dynamic_cast<TGraphErrors *>(bootstrap->Get(
+          (std::string("SYS_") + task + std::string("_") + observable)
+              .c_str()));
 
       x.push_back((CentralityBinEdges[i + 1] + CentralityBinEdges[i]) / 2.);
       ex.push_back((CentralityBinEdges[i + 1] - CentralityBinEdges[i]) / 2.);
       i++;
-      y.push_back(hist->GetPointY(0));
-      ey.push_back(hist->GetErrorY(0));
+      y.push_back(hstat->GetPointY(0));
+      estat.push_back(hstat->GetErrorY(0));
+      esys.push_back(hsys->GetErrorY(0));
     }
 
-    ge = new TGraphErrors(x.size(), x.data(), y.data(), ex.data(), ey.data());
-    ge->Write(observable.c_str());
-    delete ge;
+    gstat =
+        new TGraphErrors(x.size(), x.data(), y.data(), ex.data(), estat.data());
+    gstat->Write((std::string("STAT_") + observable).c_str());
+    delete gstat;
+
+    gsys =
+        new TGraphErrors(x.size(), x.data(), y.data(), ex.data(), esys.data());
+    gsys->Write((std::string("SYS_") + observable).c_str());
+    delete gsys;
   }
 
   bootstrap->Close();
